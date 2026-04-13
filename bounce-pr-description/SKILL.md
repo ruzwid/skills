@@ -95,7 +95,7 @@ Every value must be in square brackets `[like this]`. The review-tool regex extr
 ### Changes
 
 <!--- Context: why this was built -->
-[1-2 sentences: the ticket, the problem, why this change exists]
+**BOUN-XXXX**: [2-3 sentences explaining: (1) what the problem/issue was, (2) why it matters or how it affected users, (3) what this PR fixes]
 
 <!--- Summary of changes -->
 - [Concise bullets describing what changed — group by repo if touching multiple]
@@ -139,6 +139,17 @@ Read more on the review tool and usage [here](https://bounceinsights.atlassian.n
 ````
 
 Replace `[No]` with `[Yes]` in the Impact section for any library repo that has actual changes.
+
+### Writing the context
+
+The Changes section must start with clear context so reviewers understand what problem was solved:
+
+- **The problem**: What was broken, missing, or inefficient? (e.g., "Survey indexing failed when team members impersonated the root account")
+- **The impact**: Why does this matter? (e.g., "indexed surveys became invisible in search")
+- **The fix**: What does this PR do to solve it? (e.g., "Access verification now resolves team members to their root account before checking permissions")
+
+Bad context: "Fixed indexing bug"
+Good context: "Fixed survey indexing for team members. When a team member impersonated the root account to index a survey, the access check failed because it wasn't resolving team IDs to their root account. This made indexed surveys invisible. This PR fixes access verification to resolve team members to root before checking permissions."
 
 ## Repo entry format rules
 
