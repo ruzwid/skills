@@ -9,15 +9,20 @@ Generate structured PR descriptions that the `review-tool.sh` can parse. The rev
 
 ## Invocation
 
-The user provides a ticket code and optionally an emulator-data branch:
+The user provides a ticket code and optionally an emulator-data branch override:
 
 ```
-/pr-description BOUN-2004
-/pr-description BOUN-2004 wppSurvey123
+/bounce-pr-description BOUN-2004
+/bounce-pr-description BOUN-2004 different-branch
 ```
 
 - First argument: the ticket/branch code — used as the branch name for all repos that have changes
-- Second argument (optional): emulator-data branch override. If not provided, run one git check: `git -C ~/bounce/emulator-data branch --show-current` to get the current branch
+- Second argument (optional): emulator-data branch override. If not provided, assume emulator-data is on the same branch as the ticket code. Only run a git check if the user explicitly asks or it's ambiguous from context.
+
+**Important**: Do NOT prompt the user for the emulator-data branch. Instead, infer it intelligently:
+1. If the user says "BOUN-10306 for both", use BOUN-10306 for both
+2. If the user provides a second argument explicitly, use that
+3. Otherwise, assume emulator-data is on the same branch as the first argument
 
 ## Step 1: Gather information from the session
 
@@ -38,11 +43,11 @@ From the session context, understand:
 - What specifically changed in each repo
 
 ### Emulator-data branch
-If the user provided a second argument, use that as the emulator-data branch. Otherwise, run this single git command:
-```bash
-git -C ~/bounce/emulator-data branch --show-current
-```
-If it returns `master` or `main`, use `master`. Otherwise use whatever branch it's on.
+- If the user provided a second argument explicitly, use that as the emulator-data branch
+- If the user's natural language indicates both repos are on the same branch (e.g., "BOUN-10306 for both"), use the first argument
+- Otherwise, assume the emulator-data branch is the same as the ticket code from the first argument
+- **As a last resort only**: if the branch is ambiguous and not specified by the user, run: `git -C ~/bounce/emulator-data branch --show-current` to detect the current branch. If it returns `master` or `main`, use `master`. Otherwise use whatever branch it's on.
+- **Do NOT prompt** the user — infer from context or fall back to the git check silently
 
 ## Step 2: Determine which repos to include
 
@@ -53,7 +58,7 @@ Only include repos that are actually needed. Do NOT pad the description with ext
 
 ### Include if they have changes in this session:
 - **Library repos**: ts-types, api-core, dashboard-core
-- **Service repos**: dashboard, dashboard-api, api, web-surveys, admin-api, admin-v2, ai-server, cron-api, firestore-functions, retrieval-engine, app
+- **Service repos**: dashboard, dashboard-api, api, web-surveys, admin-api, admin-v2, ai-server, cron-api, firestore-functions, retrieval-engine, retrieval-engine-v2, app
 
 ### Include as a supporting service (on master) ONLY if the changed repo directly depends on it:
 | If this repo changed... | Also include on master |
@@ -62,6 +67,7 @@ Only include repos that are actually needed. Do NOT pad the description with ext
 | web-surveys | api |
 | admin-v2 | admin-api |
 | app | api |
+| retrieval-engine-v2 | dashboard, dashboard-api |
 | dashboard-api | (nothing extra) |
 | api | (nothing extra) |
 | admin-api | (nothing extra) |
@@ -180,6 +186,7 @@ Replace `[No]` with `[Yes]` in the Impact section for any library repo that has 
 | cron-api | `npm run start-dev` |
 | firestore-functions | `npm run fb-run-review` |
 | retrieval-engine | `python3 run.py` |
+| retrieval-engine-v2 | `sh ./scripts/dev_local_startup.sh` |
 | app | `npm run app-setup-review` |
 
 ### Install flag
