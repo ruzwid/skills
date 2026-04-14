@@ -143,17 +143,6 @@ If you have changes for dashboard, ensure that you keep the data for dashboard t
 <!--- Describe below step by step, how reviewer should test the functionality once all the process have started. -->
 
 [REVIEW STEPS — see guidance below]
-
-### Documentation
-<!--- Make sure the documentation has been updated if necessary --->
-- [ ] - [Documentation for this product](https://bounceinsights.atlassian.net/wiki/spaces/DEVELOPMEN/pages/751108109/READMEs) has been updated (if necessary)
-
-
----
-
-### Review Tool
-
-Read more on the review tool and usage [here](https://bounceinsights.atlassian.net/wiki/spaces/DEVELOPMEN/pages/993689601/Bounce+Review+Tool).
 ````
 
 Replace `[No]` with `[Yes]` in the Impact section for any library repo that has actual changes.
