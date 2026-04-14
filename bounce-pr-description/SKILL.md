@@ -68,11 +68,29 @@ Only include repos that are actually needed. Do NOT pad the description with ext
 | admin-v2 | admin-api |
 | app | api |
 | retrieval-engine-v2 | dashboard, dashboard-api |
-| dashboard-api | (nothing extra) |
-| api | (nothing extra) |
-| admin-api | (nothing extra) |
+| dashboard-api | (nothing extra by default — see flow audit below) |
+| api | (nothing extra by default — see flow audit below) |
+| admin-api | (nothing extra by default — see flow audit below) |
 
 Only add the direct backend companion (unless specified otherwise) — do not chain further (e.g., if dashboard changed, add dashboard-api but NOT api unless the user also changed api or dashboard-api depends on it for this specific feature).
+
+### Flow audit — ALWAYS do this after drafting the Functionality Review steps
+
+After writing the review steps, re-read them and ask: **which services does the reviewer need running to actually complete these steps?**
+
+Cross-reference against the port table. Any service whose URL must be visited or whose UI must be used should be in Repositories to Review — even if it has zero code changes. Add it on `master` with install `[n]`.
+
+**Common full-stack patterns to catch:**
+| If the review steps involve... | Also include on master |
+|-------------------------------|----------------------|
+| Viewing, taking, or inspecting a survey | web-surveys, api |
+| Creating or editing surveys via the dashboard UI | dashboard, dashboard-api |
+| Any admin action | admin-v2, admin-api |
+| An end-to-end flow that spans creation → viewing | dashboard, dashboard-api, web-surveys, api |
+
+**Example:** If only `dashboard-api` changed but the review steps say "open a generated survey and inspect the questions", the reviewer needs `dashboard` (to trigger creation) and `web-surveys` + `api` (to view the result) — all three must appear in Repositories to Review on master.
+
+This audit overrides the "nothing extra" defaults in the table above.
 
 ### Do NOT automatically include:
 - **firestore-functions** — only include if the user actually changed it or it's on a non-master branch
