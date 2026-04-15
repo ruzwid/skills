@@ -107,28 +107,39 @@ Every value must be in square brackets `[like this]`. The review-tool regex extr
 - Commands: `[npm run start]`
 - Install flags: `[y]` or `[n]`
 
+### Markdown heading levels
+Use proper heading hierarchy in the output. The template uses `###` (h3) for top-level sections (`### Changes`, `### Testing`, `### Functionality Review`). Do NOT use `#` or `##` — those conflict with the PR title and GitHub rendering. Sub-sections within Testing (like **Impact on Repositories** and **Repositories to Review**) use bold text, not headings.
+
 ### Output template
 
 ````markdown
 ### Changes
 
-<!--- Context: why this was built -->
-**BOUN-XXXX**: [2-3 sentences explaining: (1) what the problem/issue was, (2) why it matters or how it affected users, (3) what this PR fixes]
+#### Context
 
-<!--- Summary of changes -->
-- [Concise bullets describing what changed — group by repo if touching multiple]
+[2-3 short paragraphs explaining:
+1. **The situation** — what existed before, how things worked
+2. **The problem** — what broke, what was wrong, what was missing
+3. **The fix** — what this PR does to solve it]
+
+#### What changed
+
+- [Concise bullets describing what was done — each bullet starts with a verb]
+- [Wrap code identifiers in backticks: `functionName`, `repoName`, `CONSTANT_NAME`]
+- [Group by repo if touching multiple repos, using sub-bullets]
+- [If a code example helps illustrate the approach, include it in a fenced code block between the context and the bullet list]
 
 ### Testing
 
 **Impact on Repositories**
 
-<!--- If there are changes on ts-types changes then mark Yes. Otherwise, mark No.  -->
+<!--- If there are changes on ts-types then mark Yes. Otherwise, mark No.  -->
 Is there any changes on ts-types repository? [No]
 
-<!--- If there are changes on api-core changes then mark Yes. Otherwise, mark No.  -->
+<!--- If there are changes on api-core then mark Yes. Otherwise, mark No.  -->
 Is there any changes on api-core repository? [No]
 
-<!--- If there are changes on dashboard-core changes then mark Yes. Otherwise, mark No.  -->
+<!--- If there are changes on dashboard-core then mark Yes. Otherwise, mark No.  -->
 Is there any changes on dashboard-core repository? [No]
 
 
@@ -147,16 +158,34 @@ If you have changes for dashboard, ensure that you keep the data for dashboard t
 
 Replace `[No]` with `[Yes]` in the Impact section for any library repo that has actual changes.
 
-### Writing the context
+### Writing the Context section
 
-The Changes section must start with clear context so reviewers understand what problem was solved:
+The Context section gives reviewers the full picture so they understand the PR without reading the code first. Structure it as 2-3 short paragraphs:
 
-- **The problem**: What was broken, missing, or inefficient? (e.g., "Survey indexing failed when team members impersonated the root account")
-- **The impact**: Why does this matter? (e.g., "indexed surveys became invisible in search")
-- **The fix**: What does this PR do to solve it? (e.g., "Access verification now resolves team members to their root account before checking permissions")
+**Paragraph 1 — The situation:** What existed before? How did the system work? Set the scene.
+**Paragraph 2 — The problem:** What broke or was missing? Why did it matter? What was the user-facing or developer-facing impact?
+**Paragraph 3 — The fix:** What does this PR do about it? One sentence on the approach.
 
-Bad context: "Fixed indexing bug"
-Good context: "Fixed survey indexing for team members. When a team member impersonated the root account to index a survey, the access check failed because it wasn't resolving team IDs to their root account. This made indexed surveys invisible. This PR fixes access verification to resolve team members to root before checking permissions."
+If a code example helps explain the approach (e.g., showing what a generated data structure looks like), place it between the Context paragraphs and the bullet list, inside a fenced code block with the appropriate language tag.
+
+**Bad context:** "Fixed formatting bug in surveys"
+
+**Good context:**
+
+> PR #1833 fixed "Placeholder" text rendering in WPP surveys by clearing `columnChoicesFormatting` and `rowItemsFormatting` to empty arrays in `shiftAndInsertQuestions`. This worked but had a side effect — it stripped all rich text formatting (bold/italic/underline) from matrix questions, breaking the formatting support added in #500.
+>
+> The proper fix for the Placeholder mismatch is handled in the companion PR (BOUN-10345), which regenerates formatting at runtime when rules overwrite options.
+
+### Writing the "What changed" bullets
+
+- Start each bullet with a verb: "Update", "Add", "Remove", "Refactor", "Revert"
+- Wrap all code identifiers in backticks: function names, variable names, file names, constants
+- Keep each bullet to one clear action
+- If touching multiple repos, group with sub-bullets:
+  ```
+  - **web-surveys**: Update `shiftAndInsertQuestions` to preserve formatting arrays
+  - **api**: Add `generateFormatting()` helper to runtime rule execution
+  ```
 
 ## Repo entry format rules
 
@@ -207,9 +236,15 @@ Good context: "Fixed survey indexing for team members. When a team member impers
 | retrieval-engine-v2 | `sh ./scripts/dev_local_startup.sh` |
 | app | `npm run app-setup-review` |
 
-### Install flag
-- `[y]` — for repos with changes (on the feature branch), or repos that depend on a changed library (ts-types/api-core/dashboard-core)
-- `[n]` — for supporting service repos on master with no dependency changes
+### Install flag logic
+
+The install flag `[y]` or `[n]` tells the review-tool whether to run `npm install` for a repo. The logic is driven by the **Impact on Repositories** section:
+
+- `[y]` — the repo has actual code changes on the feature branch
+- `[y]` — the repo is on `master` BUT one of the impact repos it depends on has changed (ts-types, api-core, or dashboard-core are marked `[Yes]`). This is because a library change means the repo needs a fresh `npm install` to pick up the updated dependency.
+- `[n]` — the repo is on `master` as a supporting service AND none of its library dependencies (ts-types/api-core/dashboard-core) have changed
+
+**In short:** if Impact on Repositories is all `[No]`, then every repo on `master` gets `[n]`. If any impact repo is `[Yes]`, then repos on `master` that depend on that library get `[y]`.
 
 ### Branch logic
 - Repos with changes: use the ticket code provided by the user (e.g., `BOUN-2004`)
