@@ -108,28 +108,28 @@ Every value must be in square brackets `[like this]`. The review-tool regex extr
 - Install flags: `[y]` or `[n]`
 
 ### Markdown heading levels
-Use proper heading hierarchy in the output. The template uses `###` (h3) for top-level sections (`### Changes`, `### Testing`, `### Functionality Review`). Do NOT use `#` or `##` — those conflict with the PR title and GitHub rendering. Sub-sections within Testing (like **Impact on Repositories** and **Repositories to Review**) use bold text, not headings.
+Use `##` for top-level sections (`## Changes`, `## Testing`, `## Functionality Review`) and `###` for sub-sections (`### Context`, `### What changed`). Sub-sections within Testing (like **Impact on Repositories** and **Repositories to Review**) use bold text, not headings.
 
 ### Output template
 
 ````markdown
-### Changes
+## Changes
 
-#### Context
+### Context
 
 [2-3 short paragraphs explaining:
 1. **The situation** — what existed before, how things worked
 2. **The problem** — what broke, what was wrong, what was missing
 3. **The fix** — what this PR does to solve it]
 
-#### What changed
+### What changed
 
 - [Concise bullets describing what was done — each bullet starts with a verb]
 - [Wrap code identifiers in backticks: `functionName`, `repoName`, `CONSTANT_NAME`]
 - [Group by repo if touching multiple repos, using sub-bullets]
 - [If a code example helps illustrate the approach, include it in a fenced code block between the context and the bullet list]
 
-### Testing
+## Testing
 
 **Impact on Repositories**
 
@@ -150,7 +150,7 @@ If you have changes for dashboard, ensure that you keep the data for dashboard t
 
 [REPO ENTRIES — see format rules below]
 
-### Functionality Review
+## Functionality Review
 <!--- Describe below step by step, how reviewer should test the functionality once all the process have started. -->
 
 [REVIEW STEPS — see guidance below]
@@ -158,7 +158,7 @@ If you have changes for dashboard, ensure that you keep the data for dashboard t
 
 Replace `[No]` with `[Yes]` in the Impact section for any library repo that has actual changes.
 
-### Writing the Context section
+### Writing the `### Context` section
 
 The Context section gives reviewers the full picture so they understand the PR without reading the code first. Structure it as 2-3 short paragraphs:
 
@@ -176,7 +176,7 @@ If a code example helps explain the approach (e.g., showing what a generated dat
 >
 > The proper fix for the Placeholder mismatch is handled in the companion PR (BOUN-10345), which regenerates formatting at runtime when rules overwrite options.
 
-### Writing the "What changed" bullets
+### Writing the `### What changed` bullets
 
 - Start each bullet with a verb: "Update", "Add", "Remove", "Refactor", "Revert"
 - Wrap all code identifiers in backticks: function names, variable names, file names, constants
@@ -186,6 +186,25 @@ If a code example helps explain the approach (e.g., showing what a generated dat
   - **web-surveys**: Update `shiftAndInsertQuestions` to preserve formatting arrays
   - **api**: Add `generateFormatting()` helper to runtime rule execution
   ```
+
+**When to use a table:** If the change affects multiple fields, options, or behaviors in a structured way, a table is clearer than bullets:
+
+```markdown
+| Field | Before | After |
+|-------|--------|-------|
+| `columnChoicesFormatting` | Preserved on shift | Cleared to `[]` |
+| `rowItemsFormatting` | Preserved on shift | Cleared to `[]` |
+```
+
+For more complex comparisons, an ASCII box table also works well:
+
+```markdown
+| Where options change | Formatting updated? |
+|---|---|
+| mainWpp creates questions | No formatting created at all |
+| exportSurveyToEditor normalizes | Yes — generates from current values |
+| pipeFamiliarBrandsRule (runtime) | NO — only updates rowItems |
+```
 
 ## Repo entry format rules
 
@@ -253,20 +272,28 @@ The install flag `[y]` or `[n]` tells the review-tool whether to run `npm instal
 
 ## Functionality Review guidance
 
-Write specific test steps based on what was actually built. Do not write generic steps.
+Write specific, numbered steps based on what was actually built. Do not write generic steps.
 
-### Start with the review-tool command
+### Template structure
+
 ```
-1. Run `review-tool <primary-repo> <PR_NUMBER>` to spin up all services
-2. Wait for services to start
+1. Run `review-tool <primary-repo> <PR_NUMBER>` to set up all services.
+2. [Navigation step — where to go first]
+3. [Action step — what to do]
+4. [Verification step — what to confirm/expect]
 ```
 
 `<primary-repo>` is the repo the PR is being opened in.
 
-### Then describe what to test
-Reference specific URLs, pages, and expected behavior based on the actual changes from this session.
+### Step types
 
-**Port reference:**
+Each step should be one of:
+- **Setup**: Running a command or navigating to a URL
+- **Action**: Clicking, filling in, submitting
+- **Verification**: "Confirm that...", "Verify that...", "Check that..." — always end with the expected result
+
+### Port reference
+
 | Service | URL |
 |---------|-----|
 | dashboard | http://localhost:3002 |
@@ -278,6 +305,14 @@ Reference specific URLs, pages, and expected behavior based on the actual change
 | firestore-functions | http://localhost:4001 |
 | retrieval-engine | http://localhost:1444 |
 
-### Be specific
-Bad: "Test the feature"
-Good: "Open http://localhost:3002, go to My Surveys, verify the refresh button now reads 'Refresh this dashboard', click it and confirm the list refreshes. Then go to Trackers and confirm that button still reads 'Refresh'."
+### Bad vs Good
+
+**Bad:**
+> Test the feature.
+
+**Good:**
+> 1. Run `review-tool dashboard 1234` to spin up all services.
+> 2. Open http://localhost:3002 and go to My Surveys.
+> 3. Click the refresh button and confirm it reads "Refresh this dashboard".
+> 4. Verify the list refreshes after clicking.
+> 5. Go to Trackers and confirm that button still reads "Refresh".
