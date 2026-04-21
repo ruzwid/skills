@@ -1,11 +1,13 @@
 ---
-name: bounce-pr-description
-description: "Generate PR descriptions and create PRs for Bounce Insights repositories, formatted for the review-tool. Use this skill whenever the user asks to create, generate, or write a PR description, pull request description, or review-tool description for any Bounce repo. Also trigger when the user says things like 'write the PR body', 'fill in the PR template', 'prepare the PR', 'generate the repos to review section', 'open the PR', or mentions review-tool formatting. Trigger proactively when the user is about to open a PR and hasn't written a description yet."
+name: create-bounce-pr
+description: "End-to-end PR creation for Bounce Insights repositories — commits, pushes, and opens PRs with review-tool-formatted descriptions. Use this skill whenever the user asks to create, open, or ship a PR for a Bounce repo, commit and create a PR for a BOUN ticket, generate a PR description, fill in the PR template, prepare the PR, write the PR body, or mentions review-tool formatting. Also triggers on description-only requests (e.g. 'give me the PR description for BOUN-XXXX'). Trigger proactively when the user has finished work on a BOUN branch and hasn't opened the PR yet."
 ---
 
-# Bounce PR Description Generator
+# Create Bounce PR
 
-Generate structured PR descriptions that the `review-tool.sh` can parse, and create the actual PRs via `gh` CLI. The review-tool uses regex to extract repo names, branches, commands, and install flags from the PR body — so the format must be exact.
+Take a Bounce ticket from *"work is done on the branch"* to *"PRs are open and ready for review"*. The skill infers what changed, commits with approval, pushes, and opens PRs whose bodies parse cleanly in `review-tool.sh`. It can also stop at just the markdown description if that's all the user wants.
+
+The review-tool uses regex to extract repo names, branches, commands, and install flags from the PR body — so the format must be exact.
 
 **Critical format rule:** Every value the review-tool reads must stay wrapped in square brackets — `[Yes]`, `[dashboard]`, `[BOUN-1234]`, `[npm run start]`, `[y]`. Breaking this breaks the tool.
 
@@ -29,8 +31,8 @@ Only after all three is the user ready to say *"commit and create the PRs for BO
 The user provides the ticket code and optionally an emulator-data branch override:
 
 ```
-/bounce-pr-description BOUN-2004
-/bounce-pr-description BOUN-2004 different-branch
+/create-bounce-pr BOUN-2004
+/create-bounce-pr BOUN-2004 different-branch
 ```
 
 - **First argument** — the ticket/branch code, used as the branch name for all repos with changes. **Do not prompt for this** — it comes from the invocation. If it's missing, ask once.
