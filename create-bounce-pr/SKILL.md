@@ -142,7 +142,15 @@ Do not chain further. If `dashboard` changed, include `dashboard-api` but **not*
 - **api** — only include if the user changed it or a changed repo directly needs it
 - Any other repo not touched on the ticket branch
 
-## Step 3: Generate the description
+## Step 3: Identify the primary repo
+
+The primary repo is the one that gets the full review-tool description. All other repos with changes get only a link to this main PR — no separate description needed.
+
+Choose the primary repo: the repo with the most significant changes on this ticket. If only one repo changed, that's the primary. If it's close, prefer the frontend or user-facing service over a backend service.
+
+## Step 4: Generate the description (primary repo only)
+
+Generate **one** full review-tool description — for the primary repo's PR only. Secondary PRs will link to this main PR instead of having their own descriptions. Do not generate separate descriptions per repo.
 
 Reminder: every value that review-tool reads stays in `[brackets]` (see top of file) — `[Yes]`/`[No]`, repo names, branches, commands, `[y]`/`[n]`.
 
@@ -349,7 +357,7 @@ Write specific, numbered steps based on what was actually built. Do not write ge
 4. [Verification step — what to confirm/expect]
 ```
 
-`<primary-repo>` is the repo the PR is being opened in.
+`<primary-repo>` is determined in Step 3. `<PR_NUMBER>` is only known after the PR is created in Step 5 — write it as a literal placeholder in the description file; the user or reviewer fills it in once the PR is open.
 
 ### Step types
 
@@ -381,11 +389,11 @@ When a step mentions a local service, write it as a markdown link with the servi
 > 4. Verify the list refreshes after clicking.
 > 5. Go to Trackers and confirm that button still reads "Refresh".
 
-## Step 4: Commit, push, and open the PRs
+## Step 5: Commit, push, and open the PRs
 
 After the description is ready, walk through: **verify branch → commit (with approval) → push → `gh pr create`**. Using `gh pr create --body-file` preserves the review-tool markdown exactly; copy-paste from the terminal would mangle it.
 
-Skip Step 4 entirely if the user only wants the PR description markdown — no `gh`, no `jira` needed.
+Skip Step 5 entirely if the user only wants the PR description markdown — no `gh`, no `jira` needed.
 
 ### Prerequisites
 
@@ -415,10 +423,6 @@ Use the same string for the GitHub PR title and for any commits you make after t
 Example: `[BOUN-2322] - Fix matrix question formatting on shift`
 
 The ticket code in brackets must match the branch / first invocation argument.
-
-### Determine the primary repo
-
-The primary repo is where the main PR is created — typically the repo with the most significant changes on this ticket. If only one repo has changes, that's the primary.
 
 ### Per-repo flow
 
