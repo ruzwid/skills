@@ -134,6 +134,15 @@ echo -e '\033[31;42mred text on green background\033[0m'
   up by `.bash_profile`/`.zshrc` (custom `$PATH` entries, aliases, nvm/rbenv shims), either add
   `export PATH="/some/extra/path:$PATH"` explicitly near the top, or use a login shebang like
   `#!/bin/bash -l`. Raycast does append `/usr/local/bin` to `$PATH` automatically.
+  - **Concretely, for nvm-managed node/npm** (the common case — `command not found: npm` when
+    the same script works fine in a terminal): sourcing `nvm.sh` isn't reliable non-interactively,
+    so just resolve and prepend the newest installed version's bin dir directly:
+    ```bash
+    NODE_BIN_DIR="$(ls -d "$HOME"/.nvm/versions/node/*/bin 2>/dev/null | sort -V | tail -1)"
+    [ -n "$NODE_BIN_DIR" ] && PATH="$NODE_BIN_DIR:$PATH"
+    export PATH
+    ```
+    Put this before anything in the script (or a script it calls) shells out to `npm`/`node`.
 - macOS permission prompts (Accessibility, Automation, Full Disk Access) triggered by a script must be
   granted to **Raycast**, not Terminal — Raycast is the actual process running the script.
 
