@@ -4,6 +4,24 @@ Personal agent skills.
 
 ## Skills
 
+### `raycast-script-creator`
+
+Create, edit, and validate Raycast Script Commands — the shebang scripts with `@raycast.*`
+metadata comments that show up as commands in Raycast's search results. Knows the full
+metadata field reference (modes, argument types, icons, refresh intervals), ships templates
+for bash/python/node/applescript/ruby/swift/php, and defaults to saving scripts into
+`~/scripts`.
+
+#### Install
+```
+npx skills add ruzwid/skills --skill raycast-script-creator -g
+```
+
+#### Update
+```
+npx skills update
+```
+
 ### `create-bounce-pr`
 
 End-to-end PR creation for Bounce Insights repos. You give it a Jira ticket key; it commits (with approval), pushes, and opens review-tool-formatted PRs across every affected repo.
