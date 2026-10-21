@@ -3,11 +3,14 @@ name: firestore-best-practices
 description: Cloud Firestore data modeling, indexing, query, cost and scaling guidance for writing and reviewing code that uses Firestore through the Firebase client SDKs, the Admin SDK or Google Cloud client libraries. Use when designing collections or document shapes, choosing between embedding, subcollections and root collections, writing or reviewing queries, counts, pagination, listeners, transactions, batch jobs, counters, Cloud Functions triggers or composite indexes, deciding what to index or exempt, or investigating a high Firestore bill, slow queries, contention errors or hotspots.
 metadata:
   version: "1.0.0"
+  last-verified: "2026-10-21"
 ---
 
 # Firestore Best Practices
 
 Firestore bills per document read, written and deleted, plus storage that includes every index entry. Almost every decision is a trade between those four. Design from the reads the app makes, not from how the data is related.
+
+Facts were last checked against the official docs on the `last-verified` date above. If that is more than six months ago, confirm limits and billing rules in the Firestore docs before quoting exact numbers.
 
 This guide targets **Standard edition** (the default, and what Firebase projects use). Enterprise edition has optional indexes, Pipelines and size-based billing; see `references/cost-model.md` before applying cost advice to it.
 

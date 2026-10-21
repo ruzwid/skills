@@ -1,6 +1,6 @@
 # Limits (Standard edition)
 
-Check the official quotas page for current values; these change occasionally.
+Values as of the `last-verified` date in SKILL.md. Check the official quotas page for current values; these change occasionally.
 
 ## Documents
 
