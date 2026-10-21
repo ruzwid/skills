@@ -19,7 +19,7 @@ This guide targets **Standard edition** (the default, and what Firebase projects
 - The database is one sorted key-value table. A document's key is its full path; a subcollection is not "inside" its parent, it just shares a key prefix.
 - The table is cut into contiguous key ranges (splits). Each split is synchronously replicated; a write commits when a majority of replicas agree.
 - Every indexed field adds index entries: keys with no payload, sorted in the same kind of table. A write updates the document and all its index entries in one commit.
-- Every query is a contiguous scan of one index, or a merge of several. Cost and latency scale with **results returned**, not with collection size.
+- Every query is a contiguous scan of one index, or a merge of several. Cost and latency mostly scale with **results returned**, not with collection size. The exceptions are `offset`, aggregations, and queries with two or more range fields, which also pay for index entries scanned (`references/cost-model.md`).
 
 ## Hard rules
 

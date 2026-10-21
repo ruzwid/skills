@@ -29,7 +29,8 @@ Values as of the `last-verified` date in SKILL.md. Check the official quotas pag
 
 | Limit | Value |
 | --- | --- |
-| `in`, `not-in`, `array-contains-any` values | 30 |
+| `in`, `array-contains-any` values | 30 |
+| `not-in` values | 10 |
 | OR disjunctions (after normalisation) | 30 |
 | Fields with range or inequality filters | 10 |
 | Aggregation query deadline | 60 seconds |

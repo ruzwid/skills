@@ -9,7 +9,7 @@ Standard edition bills per document operation, not per byte. Writes cost about 3
 | `get()` of a document | 1 read, even if the document doesn't exist |
 | Query | 1 read per document returned; **at least 1 read even when empty** |
 | Query using `offset(n)` | 1 read per skipped document + 1 per returned document |
-| Query with range filters on more than one field | Documents returned + 1 read per 1,000 index entries scanned |
+| Query with two or more range fields | Documents returned + 1 read per 1,000 index entries scanned (see below) |
 | `count()` / `sum()` / `average()` | 1 read per 1,000 index entries scanned (minimum 1) |
 | Projection (`select()`) | Same as a full document read. Saves bandwidth and latency only |
 | Listener, initial snapshot | 1 read per document in the result |
@@ -17,6 +17,15 @@ Standard edition bills per document operation, not per byte. Writes cost about 3
 | Listener reconnect | Re-billed as a new query after 30 minutes offline, or on any reconnect when offline persistence is disabled |
 | Security rules `get()`, `exists()`, `getAfter()` | 1 read per distinct document accessed, once per request |
 | Reads served from the client cache | Free |
+
+### Index entry reads
+
+Queries with at most one range field don't pay for index entries. With two or more, every 1,000 entries scanned costs a read on top of the documents returned. What counts as a range field:
+- Every field with an inequality filter (`<`, `<=`, `>`, `>=`, `!=`, `not-in`).
+- Every `orderBy` field, once the query has at least one other range field.
+- `__name__` (the document ID), always, even in an equality filter.
+
+So `where("age", ">", 18).orderBy("age").orderBy("startDate")` has two range fields and pays for index entries despite one inequality filter. A query that scans many entries but returns few documents can cost far more than its result size suggests. Check with Query Explain.
 
 ## What counts as a write or delete
 

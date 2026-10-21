@@ -58,9 +58,9 @@ Live, hot, or over millions of rows → maintain it on write. Occasional and in 
 
 ## Cloud Functions triggers
 
-- **At-least-once delivery.** A trigger can run twice for one event. Make it idempotent: use deterministic IDs for what it creates, `increment` only behind an "already processed" marker, or compare before and after.
+- **At-least-once delivery.** A trigger can run twice for the same event, with identical data, so a before/after comparison doesn't catch the repeat. Make the work idempotent: deterministic IDs for what it creates, `set` with absolute values rather than `increment`, or record the event ID (`event.id`) in a transaction together with the side effect and skip if it's already recorded.
 - **No ordering guarantee** between events.
-- **Loops.** An `onDocumentWritten` trigger that updates its own document fires again. Guard on whether the relevant fields actually changed.
+- **Loops.** An `onDocumentWritten` trigger that updates its own document fires again. Compare before and after, and only write when the fields you care about actually changed.
 - **Fan-out cost.** A trigger that updates 5,000 documents per event costs 5,000 writes per event. Count it before shipping.
 
 ## Deletes

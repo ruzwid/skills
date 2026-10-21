@@ -77,9 +77,9 @@ A `get()` per item in a list costs a read and a round trip each.
 ## Query semantics that cause silent bugs
 
 - **Missing fields are invisible.** A document without the field has no index entry, so it's excluded by `==`, `!=`, `not-in`, ranges, and **any `orderBy` on that field**. `where("archived", "!=", true)` misses every document that never had `archived`. Write defaults on create, and backfill before shipping a query on a new field.
-- **`!=` and `not-in` also exclude `null`**, and match across types (`!= 1` returns strings).
+- **`!=` and `not-in` match across types** (`!= 1` returns strings), and like every filter they skip documents missing the field.
 - **Ranges stop at a type boundary.** `where("age", ">", 18)` never returns `age: "25"`.
-- **`in`, `not-in` and `array-contains-any` accept 30 values.** OR queries are limited to 30 disjunctions after normalisation, so `in` combined with OR can exceed it quickly.
+- **`in` and `array-contains-any` accept 30 values; `not-in` accepts 10.** OR queries are limited to 30 disjunctions after normalisation, so `in` combined with OR can exceed it quickly. `not-in` and `!=` can't be combined in one query.
 - **`array-contains` matches whole elements**: it can't match a field inside an array of maps. Keep a separate array of the values you need to query.
 - **Strings sort by UTF-8 bytes**: uppercase before lowercase, no locale ordering, no case-insensitive matching. Store a normalised copy (e.g. lowercase) if you need it.
 - **Only the first 1,500 bytes of a value are indexed**, so equality and ordering on very long strings are unreliable.
@@ -93,5 +93,13 @@ Rules check whether a query *could* return a forbidden document, not what it act
 ## Things Firestore can't do natively
 
 - **Joins.** Denormalise or batch-get.
-- **Full-text search, prefix-in-the-middle, fuzzy matching.** Prefix search is possible with a range (`>= term`, `< term + ""`) on a normalised field. Anything more needs an external search index (Algolia, Typesense, Elasticsearch, Meilisearch) kept in sync by triggers.
+- **Full-text search, infix matching, fuzzy matching.** Anything beyond a prefix needs an external search index (Algolia, Typesense, Elasticsearch, Meilisearch) kept in sync by triggers.
+- **Prefix search** works as a range on a normalised field, with an exclusive upper bound made by incrementing the prefix's last character. Don't use the common `term + "\uf8ff"` bound: it misses matches containing characters that sort after U+F8FF, such as emoji.
+
+  ```ts
+  const end = term.slice(0, -1) + String.fromCharCode(term.charCodeAt(term.length - 1) + 1);
+  db.collection("surveys").where("nameLower", ">=", term).where("nameLower", "<", end);
+  ```
+
+  This assumes the last character isn't an emoji or other non-BMP character.
 - **Group by, pivots, weighted aggregates, cross-tabs.** Move these to an analytical store (`denormalisation.md`).
