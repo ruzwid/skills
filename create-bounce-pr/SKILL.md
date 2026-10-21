@@ -99,9 +99,9 @@ Generate **one** description using the template in `references/review-tool-forma
 ### Prerequisites
 
 - **`gh` CLI** — must be authenticated (`gh auth status`). Attaching screenshots needs `gh` 2.99+ (`--attach`); if it's older, suggest `brew upgrade gh` or fall back to the drag-in placeholder.
-- **`jira` CLI** — used only for the ticket summary. Verify with `command -v jira` and `jira issue view BOUN-XXXX --plain`. If it fails, offer: fix the CLI, paste the summary manually, or switch to description-only.
+- **`jira` CLI** — only needed when the user hasn't given a PR title. If they have, use it and skip Jira entirely.
 
-**Fetch the ticket summary** (if the user didn't supply one):
+**Fetch the ticket summary** (only if the user didn't give a PR title):
 
 1. `jira issue view BOUN-XXXX --plain` (preferred)
 2. If that fails but `JIRA_EMAIL` and `JIRA_API_TOKEN` are set:
@@ -117,10 +117,10 @@ Generate **one** description using the template in `references/review-tool-forma
 Same string for the PR title and the first commit:
 
 ```
-[BOUN-2322] - <Jira ticket summary>
+[BOUN-2322] - <PR title from the user, or the Jira ticket summary>
 ```
 
-The ticket code must match the branch / first invocation argument.
+The ticket code must match the branch / first invocation argument. If the user's title already has the `[BOUN-XXXX] - ` prefix, don't add it twice.
 
 ### Per-repo flow
 
@@ -156,26 +156,43 @@ Push explicitly so auth, rejected-commit, and hook failures surface before the P
 
 ### Create PRs
 
-1. **Main PR** — write the description to `/tmp/bounce-pr/body.md` first (`--body-file` preserves the markdown exactly), then:
+When the ticket spans several repos, every PR starts with a **Related PRs** block linking the other PRs in the group. Secondaries are created first so the main PR can be created with its complete block and never needs editing — re-editing it after `--attach` would mean re-sending local image paths.
+
+1. **Secondary PRs** — create each with a temporary body and capture its URL:
+   ```bash
+   cd ~/bounce/<other-repo> && gh pr create \
+     --base master \
+     --title "[BOUN-XXXX] - <title>" \
+     --body "Main PR to follow."
+   ```
+
+2. **Main PR** — put the Related PRs block (all secondary URLs) at the top of the description in `/tmp/bounce-pr/body.md` (`--body-file` preserves the markdown exactly), then:
    ```bash
    cd ~/bounce/<primary-repo> && gh pr create \
      --base master \
-     --title "[BOUN-XXXX] - <Jira ticket summary>" \
+     --title "[BOUN-XXXX] - <title>" \
      --body-file /tmp/bounce-pr/body.md \
      --attach /tmp/bounce-pr/before.png \
      --attach /tmp/bounce-pr/after.png
    ```
    Pass one `--attach` per screenshot referenced in the body, using the same absolute path; drop the flags when there are none. Capture the returned PR URL. If the body has a screenshot placeholder, remind the user to drag images in on GitHub.
 
-2. **Secondary PRs** — body links to the main PR:
+3. **Back-fill the secondaries** — now that every URL is known, replace each secondary's body with its Related PRs block (the main PR plus the other secondaries):
    ```bash
-   cd ~/bounce/<other-repo> && gh pr create \
-     --base master \
-     --title "[BOUN-XXXX] - <Jira ticket summary>" \
-     --body "Main PR: <main-pr-url>"
+   gh pr edit <secondary-pr-url> --body-file /tmp/bounce-pr/related-<repo>.md
    ```
 
-3. **Show all PR links:**
+**Related PRs block** — list the *other* PRs only, main first and marked. Bare URLs render as `bounceinsights/<repo>#<n>` links on GitHub:
+
+```markdown
+**Related PRs**
+- https://github.com/bounceinsights/dashboard-api/pull/1234 (main — full description and review steps)
+- https://github.com/bounceinsights/web-surveys/pull/567
+```
+
+On the main PR, drop the `(main …)` line and list the secondaries. Single-repo tickets get no block.
+
+4. **Show all PR links:**
    ```
    PRs created:
    - dashboard-api (main): https://github.com/org/dashboard-api/pull/1234

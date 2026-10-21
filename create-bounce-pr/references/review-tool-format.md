@@ -9,6 +9,8 @@
 ## Output template
 
 ````markdown
+<Related PRs block — multi-repo tickets only, see Create PRs in SKILL.md>
+
 ## Changes
 
 ### Context
