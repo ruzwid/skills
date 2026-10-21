@@ -17,7 +17,7 @@ Arguments: `$ARGUMENTS`. If given (e.g. `dashboard-api#2232 ts-types#682`), revi
 ROOT="${REVIEW_DIR:-$HOME/review}"
 STATE="$ROOT/.code-review"
 TODAY=$(date +%F)
-mkdir -p "$STATE/notes/$TODAY" "$STATE/reports" "$STATE/worktrees"
+mkdir -p "$STATE/notes/$TODAY" "$STATE/reports"
 ```
 
 - `ROOT/<repo>` are disposable review clones. Updating or resetting them is fine. Never touch `~/bounce`, which holds work in progress.
@@ -52,24 +52,24 @@ gh pr view <n> -R bounceinsights/<repo> \
 1. Sync every repo the group touches, plus the consumers Step 4 will grep:
    `scripts/sync-repos.sh <repo> [<repo> ...]`
    It clones missing repos, fetches only each base branch, and parks each clone on its up-to-date base. Read its `MISSING` / `NO-BASE` / `STUCK` / `BEHIND` lines and carry them into Coverage gaps.
-2. Check the PR out into its own worktree, so the base clone stays on base for greps:
+2. Check the PR out in place, in the repo you are reading:
    ```bash
-   git -C "$ROOT/<repo>" worktree prune
-   git -C "$ROOT/<repo>" fetch -q --no-tags origin "+pull/<n>/head:pr-<n>" \
+   REPO="$ROOT/<repo>"
+   git -C "$REPO" fetch -q --no-tags origin "+pull/<n>/head:pr-<n>" \
      "+refs/heads/<base>:refs/remotes/origin/<base>"
-   git -C "$ROOT/<repo>" worktree add -f -q "$STATE/worktrees/<repo>-<n>" pr-<n>
-   WT="$STATE/worktrees/<repo>-<n>"
-   git -C "$WT" diff --stat "origin/<base>...HEAD"
-   git -C "$WT" diff "origin/<base>...HEAD"
+   git -C "$REPO" checkout -q -f pr-<n>
+   git -C "$REPO" diff --stat "origin/<base>...HEAD"
+   git -C "$REPO" diff "origin/<base>...HEAD"
    ```
+   Only one PR is checked out per repo at a time. Every other repo stays parked on its base branch, because Step 4 greps consumers on base. If a consumer you need to grep has a PR checked out, return it to base first.
 3. List the changed surfaces: exported functions, endpoints, fields, types, component props, API call sites.
-4. **Open every changed file in full** in `$WT`. Hunks hide the signature, the early return and the existing error handling.
+4. **Open every changed file in full** in `$REPO`. Hunks hide the signature, the early return and the existing error handling.
 5. Grep callers of each changed export from the repo **root**, never `src/` only. Cypress specs, `tests/`, `__mocks__/`, root `config.js` and `scripts/` live outside it:
    ```bash
-   grep -rn "<identifier>" "$WT" --exclude-dir={node_modules,dist,build,coverage,.git,.next}
+   grep -rn "<identifier>" "$REPO" --exclude-dir={node_modules,dist,build,coverage,.git,.next}
    ```
 6. Never review from the diff alone. No readable tree means "not reviewed".
-7. When the group is done: `git -C "$ROOT/<repo>" worktree remove --force "$WT" && git -C "$ROOT/<repo>" branch -D -q pr-<n>`.
+7. Before moving to the next PR in the same repo, and when the group is done, park the repo back on its default branch: `git -C "$REPO" checkout -q -f <default-branch> && git -C "$REPO" branch -D -q pr-<n>`.
 
 ## Step 4: Cross-repo impact
 
@@ -93,7 +93,7 @@ Read only the references the group needs:
 
 For Firestore-heavy changes, also load the `firestore-best-practices` skill if it's installed and apply its "Reviewing Firestore code" checklist.
 
-For frontend changes, optionally run `npx -y react-doctor@latest --verbose --scope changed` inside `$WT`. Use it only if it finishes within about two minutes. Its output is a list of **candidates**: each one still goes through Step 6, and none is pasted raw.
+For frontend changes, optionally run `npx -y react-doctor@latest --verbose --scope changed` inside `$REPO` while the PR is checked out. Use it only if it finishes within about two minutes. Its output is a list of **candidates**: each one still goes through Step 6, and none is pasted raw.
 
 The checklists are a floor, not a ceiling. When they come up empty but something feels off, ask:
 1. What does this code assume that nothing guarantees?
@@ -104,7 +104,7 @@ The checklists are a floor, not a ceiling. When they come up empty but something
 
 Read `references/finding-bar.md` and apply it to each candidate before it reaches the report:
 
-1. Re-open the anchored lines in `$WT` and try to **refute** the finding: pre-existing, handled elsewhere, intentional per the PR body or ticket, unreachable, or caught by the typechecker (TS repos only).
+1. Re-open the anchored lines (check the PR out again if the repo was already parked) and try to **refute** the finding: pre-existing, handled elsewhere, intentional per the PR body or ticket, unreachable, or caught by the typechecker (TS repos only).
 2. Score confidence 0–100 with the rubric there. Keep 80+. A 50–79 finding survives only as a **question** the author can answer. Drop the rest.
 3. Deduplicate: one root cause across several PRs is one finding with several locations.
 4. Cap at 8 findings per PR: keep every blocking finding and the best nits, and say how many were trimmed.
