@@ -29,8 +29,10 @@ mkdir -p "$STATE/notes/$TODAY" "$STATE/reports"
 Run `scripts/find-prs.sh`. It prints one JSON object per PR with `repo`, `number`, `title`, `author`, `isDraft`, `url` and `reason` (`requested` or `mine`). `review-requested:@me` already includes requests to teams I'm on.
 
 - **Requested** PRs get a full review. Drafts included, marked `_draft_`.
-- **Mine** PRs get the same review. I can't approve my own PR, so their verdict is only a readiness signal. Skip my **drafts** not updated in 14 days; list them in one line under Coverage gaps.
+- **Mine** PRs get the same full review, with the same bar. They are not optional and not lower priority: catching my own bugs before a teammate does is half the point of this run. I can't approve my own PR, so their verdict is only a readiness signal. The only skip is my **drafts** not updated in 14 days; list them in one line under Coverage gaps.
 - **Unchanged** PRs: if `state.json` has the same head SHA (found in Step 2), don't re-review. List them in the report's Unchanged section with the last verdict and date.
+
+Save the script's output to `STATE/notes/$TODAY/queue.jsonl`. **Every line in it must end up in the report**: in a group table, under Unchanged, or under Coverage gaps with a reason. Step 7 checks this.
 
 ## Step 2: Metadata, groups, stacks
 
@@ -110,6 +112,8 @@ Read `references/finding-bar.md` and apply it to each candidate before it reache
 4. Cap at 8 findings per PR: keep every blocking finding and the best nits, and say how many were trimmed.
 
 ## Step 7: Report
+
+Before writing, reconcile against `STATE/notes/$TODAY/queue.jsonl`: count its `requested` and `mine` lines, and confirm each PR appears in a table, under Unchanged, or under Coverage gaps. If any is missing, review it now. Never drop one silently.
 
 Write the report exactly as `references/output.md` describes, save it to `STATE/reports/$TODAY.md`, and print it as the final answer.
 

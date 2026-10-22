@@ -4,8 +4,10 @@
 
 ```
 # PR Review — <date>
-3 groups · 6 PRs · 1 changes · 1 comment · 1 approve · 2 unchanged
+3 groups · 6 PRs (4 requested, 2 mine) · 1 changes · 1 comment · 1 approve · 2 unchanged
 ```
+
+The requested and mine counts come from `queue.jsonl` and include unchanged and skipped PRs. If mine is above 0, at least one `(mine)` group, Unchanged line or Coverage gaps line must name them.
 
 ## One section per group, worst verdict first
 
@@ -62,7 +64,7 @@ Every group gets a table, even a single PR. Order rows by repo, then PR number.
 **Coverage gaps**: always present, even if empty. List:
 - `MISSING`, `NO-BASE`, `STUCK`, `BEHIND`, `FETCH-FAILED` lines from `sync-repos.sh`, and what that means for the review.
 - Consumers swept only by `gh search code` (default branches, may lag), not by a local grep.
-- PRs not reviewed and why (base unresolvable, no readable tree).
+- PRs not reviewed and why (base unresolvable, no readable tree, my stale drafts).
 - Findings trimmed by the 8-per-PR cap.
 
 ## Posting rules (only when I ask after the report)
