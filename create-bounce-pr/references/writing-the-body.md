@@ -28,7 +28,7 @@ Lead with a visual, then follow with short bullets.
 
 ### Visual summary
 
-Pick the smallest view that makes the key point clear.
+Pick the smallest view that makes the key point clear. For a visible UI change, a screenshot (or a before/after pair) usually beats a component tree. Keep the tree for structural changes a screenshot can't show. **Choosing visuals** below lists every format.
 
 - Show logic or an algorithm as pseudocode:
 
@@ -164,36 +164,44 @@ Use a **table** instead when 3+ fields, options, or behaviors change in the same
 
 ## `## Evidence`
 
-Concrete proof the change works, shown as before and after. This is what the author already verified — distinct from Functionality Review, which is what the reviewer will do.
+Concrete proof the change works. This is what the author already verified, unlike Functionality Review, which is what the reviewer will do.
 
-Use execution-based evidence: the exact test that failed before and passes now, typecheck/lint output, console output, a `curl` response. Paste real output in a fenced block, trimmed to the relevant lines.
+Use execution-based evidence: tests, typecheck or lint output, console output, a `curl` response. Paste real output trimmed to the relevant lines. Only include evidence you actually ran or saw in this session or the branch history. Never invent output.
+
+**Test runs** go in one compact block for all repos: a `#` heading per repo with the command, its trimmed output, and `---` between repos:
+
+````markdown
+- **Tests**
+  ```markdown
+  # dashboard-api — `jest src/routes/tags` (Firestore emulator)
+  PASS src/routes/tags/index.test.ts
+  PASS src/routes/tags/sourceTags.test.ts
+  Tests:       150 passed, 150 total
+  ---
+  # retrieval-engine-v2 — `uv run pytest tests/unit`
+  1363 passed
+  ---
+  # dashboard — `jest src/customComponents/__tests__`
+  Tests:       309 passed, 309 total
+  ```
+````
+
+Follow it with one line on what the new tests cover, if that isn't obvious from their names.
+
+**A bug fix** shows the specific test that failed before and passes now:
 
 ```markdown
 - **Before:** `formatting.test.ts › preserves matrix formatting on shift` — fails, `rowItemsFormatting` is `[]`
   **After:** passes
 ```
 
-Only include evidence you actually ran or saw in this session or the branch history. Never invent output.
+### Recordings and screenshots (visual changes)
 
-### Screenshots (visual changes only)
+When the user asks for a recording or screenshots, or accepts your offer for a visual change, record them yourself with Playwright: follow `references/recording-evidence.md`. Lay out the result with a format from **Choosing visuals** below.
 
-Screenshots are the best evidence for a visual change. The agent doesn't take them — the user does, and the agent attaches them.
+If the user already has screenshots of their own, ask which ones to use and which are **before** vs **after**; never guess. Copy them to `/tmp/bounce-pr/evidence/` with clean names (macOS screenshot names contain characters that break markdown links) and attach them the same way.
 
-1. Find candidates — images or videos in the macOS screenshot folder modified after the branch was created:
-   ```bash
-   git -C ~/bounce/<primary-repo> reflog show --date=iso --format='%gd' BOUN-XXXX | tail -1
-   screenshot_dir=$(defaults read com.apple.screencapture location 2>/dev/null || echo "$HOME/Desktop")
-   ls -lt "${screenshot_dir/#\~/$HOME}" | head -20
-   ```
-2. Look at each candidate (Read the image) and ask the user which ones to use and which are **before** vs **after**. Never guess the assignment. Flag any that show client data (respondent answers, client names, emails) — uploads can't be undone.
-3. Copy the chosen files to `/tmp/bounce-pr/` with clean names (`before.png`, `after.png`, `after-mobile.png`) — macOS screenshot names contain spaces and non-breaking characters that break markdown links.
-4. Reference them by **absolute path** in the body; `gh pr create --attach` uploads them and rewrites these links (see Step 5 in `SKILL.md`):
-   ```markdown
-   - **Before:** ![Before](/tmp/bounce-pr/before.png)
-     **After:** ![After](/tmp/bounce-pr/after.png)
-   ```
-
-If the change is visual but there are no screenshots, leave a placeholder and remind the user to drag images into the PR on GitHub once it's open:
+If the change is visual and there is nothing to attach, leave a placeholder and remind the user to drag images into the PR on GitHub:
 
 ```markdown
 - **Before:** <!-- drag screenshot here -->
@@ -201,6 +209,78 @@ If the change is visual but there are no screenshots, leave a placeholder and re
 ```
 
 If the change isn't visual and there is no execution evidence either, omit the whole `## Evidence` section.
+
+## Choosing visuals
+
+Pick per PR, by what the reviewer most needs to see. Most PRs need one or two of these, not all. Text visuals (pseudocode, call trees, Mermaid, `diff`) are under **Visual summary** above.
+
+| Format | Best for |
+|---|---|
+| Single screenshot | A new screen or state; one look explains it |
+| Before/after table | Layout, styling or copy changes; several comparisons stacked as rows |
+| Walkthrough video | Multi-step flows, interactions, anything that moves |
+| State grid | A component's empty, loading, error and filled states side by side |
+| Permission matrix | Features that differ by role, org, team or flag |
+| Data proof | Changes that write data: the stored document, or a before/after of its shape |
+| API example | New or changed endpoints: a request and its response |
+| Responsive pair | Changes that must work on desktop and mobile |
+| Collapsible section | Long logs, extra screenshots, secondary detail |
+| Metrics table | Performance work: numbers before and after |
+
+Before/after table (GitHub renders images in table cells; add rows for more comparisons):
+
+```markdown
+| Before | After |
+|---|---|
+| ![Before](/tmp/bounce-pr/evidence/before-table.png) | ![After](/tmp/bounce-pr/evidence/after-table.png) |
+| ![Before](/tmp/bounce-pr/evidence/before-modal.png) | ![After](/tmp/bounce-pr/evidence/after-modal.png) |
+```
+
+Permission matrix (checked roles only; say how each was verified):
+
+```markdown
+| Who | Sees tags | Can tag | Verified by |
+|---|---|---|---|
+| Org root | ✅ | ✅ | recording, chapter 2 |
+| Read-only member | ✅ | ❌ | screenshot below |
+| Another org | ❌ | ❌ | `sourceTags.test.ts` |
+```
+
+Data proof, as a shape diff:
+
+```diff
+ retrievalEngineV2Files/{fileId}
+   name: "Q3 report.pdf"
+   status: "indexed"
++  tags: ["tagId1", "tagId2"]
+```
+
+Or as a Firestore emulator screenshot of the stored document (see `recording-evidence.md`).
+
+API example:
+
+````markdown
+```bash
+curl -X POST localhost:1337/tags/sources/apply -d '{"items":[{"type":"file","id":"abc"}],"add":["t1"],"remove":[]}'
+```
+```json
+{ "success": true, "updated": [{ "type": "file", "id": "abc" }], "failed": [] }
+```
+````
+
+Collapsible section, so extra material doesn't push the review steps down:
+
+```markdown
+<details>
+<summary>More screenshots (read-only view, other org)</summary>
+
+![Read-only view](/tmp/bounce-pr/evidence/read-only.png)
+</details>
+```
+
+A responsive pair is a two-column table like the before/after one, with `Desktop | Mobile` headers. Use markdown image links only: `gh --attach` rewrites `![alt](path)` links to the uploaded files, but HTML `<img>` tags aren't documented to work.
+
+When a screenshot needs a pointer, draw it into the page before capturing (`playwright-cli highlight`, or an overlay in the hero script) rather than editing images afterwards.
 
 ## `## Merge Danger`
 

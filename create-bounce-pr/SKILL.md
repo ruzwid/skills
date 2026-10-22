@@ -12,7 +12,8 @@ Take a Bounce ticket from *"work is done on the branch"* to *"PRs are open and r
 ## Reference files
 
 - `references/review-tool-format.md` — the body template, which repos to list, entry format, service reference (commands + URLs), install and branch logic. Read before Step 2.
-- `references/writing-the-body.md` — how to write Context, the visual summary, Evidence, Merge Danger, and Functionality Review. Read before Step 4.
+- `references/writing-the-body.md` — how to write Context, the visual summary, Evidence, Merge Danger, and Functionality Review, and which visual formats to choose. Read before Step 4.
+- `references/recording-evidence.md` — recording a walkthrough video and screenshots with Playwright. Read only when Step 4b applies.
 
 ## Expected setup (before this skill runs)
 
@@ -34,6 +35,7 @@ Take a Bounce ticket from *"work is done on the branch"* to *"PRs are open and r
 
 - **First argument** — the ticket/branch code, used as the branch name for all repos with changes. **Do not prompt for this.** If it's missing, ask once.
 - **Second argument** (optional) — emulator-data branch override.
+- **Recording** — if the user asks for a recording, video or screenshots (e.g. *"with a recording"*), do Step 4b.
 
 ## Step 1: Gather information about the changes
 
@@ -61,7 +63,7 @@ Do **not** re-run git inspection once you've reliably determined the changed rep
    Non-empty output → that repo has changes on this ticket.
 3. For context on *what* changed: `git -C ~/bounce/<repo> log master..BOUN-XXXX --oneline` and `git -C ~/bounce/<repo> diff master...BOUN-XXXX --stat`. Read full diffs only for repos you need to describe — and read enough to draw the visual summary (call paths, components, data flow).
 
-**Also look for evidence** while you're here: test runs, typecheck output, or console output from this session that shows the change working. Note it for the Evidence section; don't run new commands just to manufacture it. For visual changes, check for user screenshots per **Screenshots** in `references/writing-the-body.md`.
+**Also look for evidence** while you're here: test runs, typecheck output, or console output from this session that shows the change working. Note it for the Evidence section; don't run new commands just to manufacture it. If the change is visual and the user hasn't asked for a recording, offer one in a single line (Step 4b).
 
 **Emulator-data branch** — infer in this order, **never prompt the user**:
 
@@ -87,10 +89,14 @@ Pick the repo with the most significant changes. If only one changed, that's it.
 Generate **one** description using the template in `references/review-tool-format.md`, written per `references/writing-the-body.md`:
 
 1. `## Changes` — Context, then What changed (visual summary + bullets)
-2. `## Evidence` — before/after from Step 1; omit if there's nothing concrete
+2. `## Evidence` — test runs from Step 1 in one block, plus any recording or screenshots from Step 4b; omit if there's nothing concrete
 3. `## Merge Danger` — door + blast radius
 4. `## Testing` — Impact on Repositories + Repositories to Review
 5. `## Functionality Review` — numbered steps, then run the flow audit and update Repositories to Review
+
+## Step 4b: Record the walkthrough (on request)
+
+Only when the user asked for a recording or screenshots, or accepted your offer. Load the `playwright-cli` skill, then follow `references/recording-evidence.md`. The video's chapters follow the Functionality Review steps from Step 4, so record after drafting them. Then add the video and screenshots to `## Evidence`, in a layout from **Choosing visuals** in `references/writing-the-body.md`.
 
 ## Step 5: Commit, push, and open the PRs
 
@@ -172,10 +178,10 @@ When the ticket spans several repos, every PR starts with a **Related PRs** bloc
      --base master \
      --title "[BOUN-XXXX] - <title>" \
      --body-file /tmp/bounce-pr/body.md \
-     --attach /tmp/bounce-pr/before.png \
-     --attach /tmp/bounce-pr/after.png
+     --attach /tmp/bounce-pr/evidence/walkthrough.webm \
+     --attach /tmp/bounce-pr/evidence/01-sources-table.png
    ```
-   Pass one `--attach` per screenshot referenced in the body, using the same absolute path; drop the flags when there are none. Capture the returned PR URL. If the body has a screenshot placeholder, remind the user to drag images in on GitHub.
+   Pass one `--attach` per image or video referenced in the body, using the same absolute path; drop the flags when there are none. Capture the returned PR URL, then check the rendered body: every attached file should now link to `github.com/user-attachments/...`. If the body has a screenshot placeholder, remind the user to drag images in on GitHub.
 
 3. **Back-fill the secondaries** — now that every URL is known, replace each secondary's body with its Related PRs block (the main PR plus the other secondaries):
    ```bash
