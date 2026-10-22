@@ -77,7 +77,7 @@ A `get()` per item in a list costs a read and a round trip each.
 ## Query semantics that cause silent bugs
 
 - **Missing fields are invisible.** A document without the field has no index entry, so it's excluded by `==`, `!=`, `not-in`, ranges, and **any `orderBy` on that field**. `where("archived", "!=", true)` misses every document that never had `archived`. Write defaults on create, and backfill before shipping a query on a new field.
-- **`!=` and `not-in` match across types** (`!= 1` returns strings), and like every filter they skip documents missing the field.
+- **`!=` and `not-in` also exclude `null`**: `where("status", "!=", "done")` skips documents where `status` is `null`. They match across types (`!= 1` returns strings).
 - **Ranges stop at a type boundary.** `where("age", ">", 18)` never returns `age: "25"`.
 - **`in` and `array-contains-any` accept 30 values; `not-in` accepts 10.** OR queries are limited to 30 disjunctions after normalisation, so `in` combined with OR can exceed it quickly. `not-in` and `!=` can't be combined in one query.
 - **`array-contains` matches whole elements**: it can't match a field inside an array of maps. Keep a separate array of the values you need to query.

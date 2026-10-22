@@ -25,7 +25,7 @@ This guide targets **Standard edition** (the default, and what Firebase projects
 
 1. **Count with an aggregation, never by fetching.** `count()`, `sum()` and `average()` bill 1 read per 1,000 index entries scanned; fetching bills 1 read per document. If the number is read constantly or over millions of rows, maintain it at write time instead.
 2. **Paginate with cursors, never `offset`.** Skipped documents are billed as reads.
-3. **Write every field you filter on, with a default.** A missing field has no index entry, so `==`, `!=`, `not-in`, ranges and `orderBy` all silently skip that document. Use `null` or `false`, not absence, and backfill before relying on a new filter.
+3. **Write every field you filter on, with a default.** A missing field has no index entry, so `==`, `!=`, `not-in`, ranges and `orderBy` all silently skip that document. Use `null` or `false`, not absence, and backfill before relying on a new filter. `!=` and `not-in` skip `null` too, so give fields you'll exclude on a real default.
 4. **Use auto-generated document IDs** for anything written at volume. Sequential or timestamp-prefixed IDs send every write to the last split. Store human-readable names as fields.
 5. **Keep documents in the tens of KB.** 1 MiB is the hard limit. Anything that grows per user or per event (responses, messages, logs) goes in a subcollection or root collection, not an array or map.
 6. **Don't update one document from many writers at once.** Use `FieldValue.increment`, sharded counters, or a trigger that aggregates asynchronously.
