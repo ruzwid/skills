@@ -55,8 +55,10 @@ Every group gets a table, even a single PR. Order rows by repo, then PR number.
 
 ## After the groups
 
-**Unchanged since last review**: one line per PR whose head SHA matches `state.json`:
-`- dashboard-api #2232 — 💬 comment on 2026-10-20, no new commits`
+**Unchanged since last review**: one line per PR whose head SHA matches `state.json`, linking the report with its full review by absolute path:
+`- dashboard-api #2232 — 💬 comment on 2026-10-20, no new commits · [2026-10-20 report](/Users/<me>/review/.code-review/reports/2026-10-20.md)`
+
+If that report file no longer exists, say so instead of linking it.
 
 **Cross-group stack chains**: only when a chain crosses ticket groups:
 `admin-v2: #638 → #639 (BOUN-11331) → #640 (BOUN-11332). #640 has a blocking finding, so approving BOUN-11331 doesn't unblock it.`
