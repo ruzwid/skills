@@ -7,7 +7,7 @@
 3 groups · 6 PRs (4 requested, 2 mine) · 1 changes · 1 comment · 1 approve · 2 unchanged
 ```
 
-The requested and mine counts come from `queue.jsonl` and include unchanged and skipped PRs. If mine is above 0, at least one `(mine)` group, Unchanged line or Coverage gaps line must name them.
+The requested and mine counts come from `queue.jsonl` and include unchanged and skipped PRs. If mine is above 0, at least one `(mine)` group, Unchanged section or Coverage gaps line must name them.
 
 ## One section per group, worst verdict first
 
@@ -27,8 +27,6 @@ Every group gets a table, even a single PR. Order rows by repo, then PR number.
 **Not reviewed (not requested):** dashboard-api #2041, the stack parent. Context only.
 
 **What it does.** One or two lines in your own words, from the diff.
-
-**Merge order.** ts-types #628 → cron-api #677 → dashboard-api #2062. Reversing the last two breaks prod: the dashboard reads `closedBy` before cron emits it.
 
 **Blocking**
 - [`dashboard-api/src/routes/close.ts:88`](https://github.com/bounceinsights/dashboard-api/blob/<full-head-sha>/src/routes/close.ts#L87-L89): loads the survey by `:id` with no tenant predicate; any logged-in user can close another tenant's survey.
@@ -55,10 +53,13 @@ Every group gets a table, even a single PR. Order rows by repo, then PR number.
 
 ## After the groups
 
-**Unchanged since last review**: one line per PR whose head SHA matches `state.json`, linking the report with its full review by absolute path:
-`- dashboard-api #2232 — 💬 comment on 2026-10-20, no new commits · [2026-10-20 report](/Users/<me>/review/.code-review/reports/2026-10-20.md)`
+## Unchanged since last review
 
-If that report file no longer exists, say so instead of linking it.
+Each unchanged group's section, copied verbatim from the latest report: same heading, table, findings and recommendation. Add one line directly under the heading:
+
+`_No new commits since the review on 2026-10-20._`
+
+Use the `reviewed` date from `state.json`. Don't edit the copied findings; if one looks wrong now, re-review the group instead. Write `None.` when there are none.
 
 **Cross-group stack chains**: only when a chain crosses ticket groups:
 `admin-v2: #638 → #639 (BOUN-11331) → #640 (BOUN-11332). #640 has a blocking finding, so approving BOUN-11331 doesn't unblock it.`

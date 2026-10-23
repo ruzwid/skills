@@ -30,7 +30,7 @@ Run `scripts/find-prs.sh`. It prints one JSON object per PR with `repo`, `number
 
 - **Requested** PRs get a full review. Drafts included, marked `_draft_`.
 - **Mine** PRs get the same full review, with the same bar. They are not optional and not lower priority: catching my own bugs before a teammate does is half the point of this run. I can't approve my own PR, so their verdict is only a readiness signal. The only skip is my **drafts** not updated in 14 days; list them in one line under Coverage gaps.
-- **Unchanged** PRs: if `state.json` has the same head SHA (found in Step 2), don't re-review. List them in the report's Unchanged section with the last verdict and date, linked to the report that holds that review: `STATE/reports/<reviewed>.md`.
+- **Unchanged** groups: if every PR in a group (Step 2) has the same head SHA as in `state.json`, don't re-review it. Copy that group's section verbatim from the most recent report in `STATE/reports/` into today's Unchanged section (format in `references/output.md`). If any PR in the group has new commits, re-review the whole group. If the section can't be found in the latest report, re-review it.
 
 Save the script's output to `STATE/notes/$TODAY/queue.jsonl`. **Every line in it must end up in the report**: in a group table, under Unchanged, or under Coverage gaps with a reason. Step 7 checks this.
 
@@ -47,7 +47,7 @@ gh pr view <n> -R bounceinsights/<repo> \
 - **Intent**: read the body for intent, then put it aside; long bodies are usually testing guides. If `jira issue view BOUN-XXXXX --plain` works, read the ticket summary and description too. It is the spec the diff is checked against.
 - **Reviewers**: say who else is asked or has reviewed only from `reviewRequests` and `latestReviews`. Never infer a name from the author, the ticket or the repo.
 - **Stacks**: a `baseRefName` that isn't the repo's default branch means stacked. Diff against `baseRefName` so only this PR's changes are reviewed. Resolve the parent with `gh pr list -R bounceinsights/<repo> --head <baseRefName> --state all --json number,state`. If the base ref can't be fetched, mark the PR "not reviewed: base unresolvable"; never fall back to the default branch.
-- **Referenced PRs** that didn't request my review are context only: name them in the merge order, marked "not requested".
+- **Referenced PRs** that didn't request my review are context only: name them in the group's **Not reviewed (not requested)** line.
 
 ## Step 3: Read the code
 
@@ -117,7 +117,16 @@ Before writing, reconcile against `STATE/notes/$TODAY/queue.jsonl`: count its `r
 
 Write the report exactly as `references/output.md` describes, save it to `STATE/reports/$TODAY.md`, and print it as the final answer. End the answer with a link to the saved file: `Report: [$TODAY.md](<absolute path>)`.
 
-Then update `state.json` with each reviewed PR's head SHA, today's date and its verdict. Leave unchanged PRs' entries as they are, so `reviewed` keeps pointing at the report with their full review.
+Then update `state.json` with each reviewed PR's head SHA, today's date and its verdict. Leave unchanged PRs' entries as they are, so `reviewed` keeps the date of their actual review.
+
+Once today's report is saved, delete earlier days. Today's report already carries every unchanged section, so nothing is lost:
+
+```bash
+find "$STATE/reports" -name '*.md' ! -name "$TODAY.md" -delete
+find "$STATE/notes" -mindepth 1 -maxdepth 1 -type d ! -name "$TODAY" -exec rm -rf {} +
+```
+
+Skip this cleanup if the run stopped before writing today's report.
 
 **Never post to GitHub during a review run.** Posting happens only when I ask afterwards, following the posting rules in `references/output.md`.
 

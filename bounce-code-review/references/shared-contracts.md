@@ -33,8 +33,8 @@ Union widening is the row that gets missed. Grep for `switch` statements on that
 
 Only possible with the whole group in view, and where the expensive bugs live.
 
-1. **Deploy skew and merge order.** For each shared surface the group changes: if repo A deploys before repo B, does production break? State an explicit order, or flag that the change must be made backward-compatible first. A group whose only safe order is "all at once" is **blocking**.
+1. **Deploy skew outside the group.** The CircleCI release orchestrator deploys a ticket group's PRs in order, so don't write a merge order for the group. Flag what it can't order: a dependency on something outside the group (another ticket's PR, a Terraform or IAM change, a data backfill, an env var) that must land first. A change that is only safe if everything deploys at the same instant is **blocking**.
 2. **Contract symmetry.** List every field or endpoint the backend PR adds, renames or removes, and confirm each appears in the frontend PR and in ts-types:
    `respondentQuota → api ✅  ts-types ✅  dashboard ❌ (still reads quotaMax)`
-3. **Stack order.** Stacked PRs merge after their parents. Fold that into the merge order.
+3. **Stack order.** Stacked PRs merge after their parents. Report it only when a stack crosses ticket groups (see Cross-group stack chains in `output.md`).
 4. **Deduplicate.** One root cause across three PRs is one finding with three locations.
