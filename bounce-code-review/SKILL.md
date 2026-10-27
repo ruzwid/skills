@@ -117,6 +117,8 @@ Before writing, reconcile against `STATE/notes/$TODAY/queue.jsonl`: count its `r
 
 Write the report exactly as `references/output.md` describes, save it to `STATE/reports/$TODAY.md`, and print it as the final answer. End the answer with a link to the saved file: `Report: [$TODAY.md](<absolute path>)`.
 
+The same goes for follow-ups in the same session ("review these please: <urls>"): review them with this skill's steps, add their group sections to today's report, and answer in chat with those sections exactly as written to the report, each starting with its table. Never rewrite them as prose or bullets for chat.
+
 Then update `state.json` with each reviewed PR's head SHA, today's date and its verdict. Leave unchanged PRs' entries as they are, so `reviewed` keeps the date of their actual review.
 
 Once today's report is saved, delete earlier days. Today's report already carries every unchanged section, so nothing is lost:
