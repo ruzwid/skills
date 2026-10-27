@@ -96,7 +96,9 @@ Read only the references the group needs:
 
 For Firestore-heavy changes, also load the `firestore-best-practices` skill if it's installed and apply its "Reviewing Firestore code" checklist.
 
-For frontend changes, optionally run `npx -y react-doctor@latest --verbose --scope changed` inside `$REPO` while the PR is checked out. Use it only if it finishes within about two minutes. Its output is a list of **candidates**: each one still goes through Step 6, and none is pasted raw.
+Run `npx -y react-doctor@latest --verbose --scope changed` inside `$REPO` while the PR is checked out when the diff changes how React components behave: new or restructured components, hooks, effects, state, context, or rendering of lists and large data. Skip it for copy, i18n keys, styles, config and small prop tweaks. Stop it if it hasn't finished within about two minutes. Its output is a list of **candidates**: each one still goes through Step 6, and none is pasted raw. Its rules assume modern React, so drop anything that doesn't apply to the repo's React version (`references/frontend.md`).
+
+**Don't run test suites, typechecks, builds or `npm install`.** The author and CI own those, and a passing suite isn't a review signal. The exception is proving a specific finding: a few lines run against the changed function (as a throwaway script, outside the repo) are fine when they turn a suspicion into a reproduced bug. Don't list unrun tests under Coverage gaps.
 
 The checklists are a floor, not a ceiling. When they come up empty but something feels off, ask:
 1. What does this code assume that nothing guarantees?
