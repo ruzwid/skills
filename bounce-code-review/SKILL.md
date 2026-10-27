@@ -2,6 +2,7 @@
 name: bounce-code-review
 description: Review open bounceinsights pull requests that request my review or that I authored, from real checkouts, and write a grouped report with verified findings. Run only when explicitly invoked, e.g. by the daily review task.
 disable-model-invocation: true
+effort: high
 argument-hint: "[repo#number ...]  (omit to review the whole queue)"
 ---
 
