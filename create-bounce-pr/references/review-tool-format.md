@@ -19,7 +19,7 @@
 
 ### What changed
 
-<visual summary + bullets — see writing-the-body.md>
+<a few bullets per repo — see writing-the-body.md>
 
 ## Evidence
 

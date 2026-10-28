@@ -12,7 +12,7 @@ Take a Bounce ticket from *"work is done on the branch"* to *"PRs are open and r
 ## Reference files
 
 - `references/review-tool-format.md` — the body template, which repos to list, entry format, service reference (commands + URLs), install and branch logic. Read before Step 2.
-- `references/writing-the-body.md` — how to write Context, the visual summary, Evidence, Merge Danger, and Functionality Review, and which visual formats to choose. Read before Step 4.
+- `references/writing-the-body.md` — how to write Context, What changed, Evidence, Merge Danger, and Functionality Review, what to leave out, and which visual formats to choose. Read before Step 4.
 - `references/recording-evidence.md` — recording a walkthrough video and screenshots with Playwright. Read only when Step 4b applies.
 
 ## Expected setup (before this skill runs)
@@ -61,7 +61,7 @@ Do **not** re-run git inspection once you've reliably determined the changed rep
      && git -C ~/bounce/<repo> diff --name-only master...BOUN-XXXX
    ```
    Non-empty output → that repo has changes on this ticket.
-3. For context on *what* changed: `git -C ~/bounce/<repo> log master..BOUN-XXXX --oneline` and `git -C ~/bounce/<repo> diff master...BOUN-XXXX --stat`. Read full diffs only for repos you need to describe — and read enough to draw the visual summary (call paths, components, data flow).
+3. For context on *what* changed: `git -C ~/bounce/<repo> log master..BOUN-XXXX --oneline` and `git -C ~/bounce/<repo> diff master...BOUN-XXXX --stat`. Read full diffs only for repos you need to describe. Read enough to name the endpoints, components and fields that changed.
 
 **Also look for evidence** while you're here: test runs, typecheck output, or console output from this session that shows the change working. Note it for the Evidence section; don't run new commands just to manufacture it. If the change is visual and the user hasn't asked for a recording, offer one in a single line (Step 4b).
 
@@ -88,11 +88,11 @@ Pick the repo with the most significant changes. If only one changed, that's it.
 
 Generate **one** description using the template in `references/review-tool-format.md`, written per `references/writing-the-body.md`:
 
-1. `## Changes` — Context, then What changed (visual summary + bullets)
+1. `## Changes` — Context, then What changed (a few bullets per repo)
 2. `## Evidence` — test runs from Step 1 in one block, plus any recording or screenshots from Step 4b; omit if there's nothing concrete
 3. `## Merge Danger` — door + blast radius
 4. `## Testing` — Impact on Repositories + Repositories to Review
-5. `## Functionality Review` — numbered steps, then run the flow audit and update Repositories to Review
+5. `## Functionality Review` — setup, then 4–6 short steps, then run the flow audit and update Repositories to Review
 
 ## Step 4b: Record the walkthrough (on request)
 
