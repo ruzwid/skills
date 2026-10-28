@@ -1,16 +1,27 @@
 # Writing the body
 
-Skip all preambles and keep prose brief. Every sentence should save the reviewer time.
+Write for a reviewer who skims. Short sentences, short bullets, no preamble. If a line doesn't help someone review or test the PR, cut it.
+
+## Length
+
+Aim for about one screen from the top of the body to `## Evidence`. Most PRs need no visual in `## Changes`, 2–4 bullets per repo and 4–6 review steps.
+
+## Never include
+
+- Lint, React Doctor or typecheck fixes, translation strings, test files, moved helpers, renames and other internal refactors.
+- History from earlier versions of the branch: bugs found and fixed in review rounds, removed temporary hooks, "before, this did X". Describe the final change against `master` only.
+- Detail the screenshots, recording or tests already show.
+- What each test file covers. The test output is the evidence.
 
 ## `### Context`
 
-Give reviewers the picture so they understand the PR before reading code. Cover whichever beats actually apply — don't manufacture filler:
+Two or three short sentences, so the reviewer knows why the PR exists before reading code:
 
-- **Situation** — what existed before, how it worked
-- **Problem** — what broke or was missing, and why it mattered
-- **Fix** — what this PR does about it, in one sentence
+- **Situation**: what existed before.
+- **Problem**: what was missing or broken, and why it matters.
+- **Fix**: what this PR does about it, in one sentence.
 
-A small refactor may only need Situation + Fix. A bug fix usually needs all three.
+Skip a beat that doesn't apply. Don't manufacture filler.
 
 **Bad:**
 
@@ -18,57 +29,56 @@ A small refactor may only need Situation + Fix. A bug fix usually needs all thre
 
 **Good:**
 
-> PR #1833 fixed "Placeholder" text rendering in WPP surveys by clearing `columnChoicesFormatting` and `rowItemsFormatting` to empty arrays in `shiftAndInsertQuestions`. This worked but had a side effect — it stripped all rich text formatting (bold/italic/underline) from matrix questions, breaking the formatting support added in #500.
->
-> The proper fix for the Placeholder mismatch is handled in the companion PR (BOUN-10345), which regenerates formatting at runtime when rules overwrite options.
+> #1833 fixed "Placeholder" text in WPP surveys by clearing the matrix formatting arrays in `shiftAndInsertQuestions`. That also stripped bold, italic and underline from every matrix question. This PR restores the arrays; BOUN-10345 fixes the Placeholder mismatch properly.
 
 ## `### What changed`
 
-Lead with a visual, then follow with short bullets.
+A few bullets per repo. Name the endpoints, components and fields that were added or changed, not every behaviour they have.
 
-### Visual summary
+- 2–4 bullets per repo. Start each with a verb: "Add", "Update", "Remove".
+- Wrap code identifiers in backticks.
+- Name new components in brackets after what they do, instead of explaining their internals.
+- Mention a feature flag once, in the repo line.
+- Single repo → plain bullets. Multiple repos → group by repo name with sub-bullets indented 2 spaces.
 
-Pick the smallest view that makes the key point clear. For a visible UI change, a screenshot (or a before/after pair) usually beats a component tree. Keep the tree for structural changes a screenshot can't show. **Choosing visuals** below lists every format.
+**Bad:**
 
-- Show logic or an algorithm as pseudocode:
-
-```text
-on(save)
-  if content is unchanged
-    return cached result
-  write new content
-  return fresh result
+```
+- Fixed some stuff
+- Made changes to the survey page
 ```
 
-- Show runtime control flow as a call tree:
+**Bad** (too much; lists every behaviour and review-round fix):
 
-```text
-submitForm
-  createSession
-    persistPrompt
-    launchAgent
-  navigateToSession
+```
+- Redesign `RelevantSourcesModal`:
+  - the same toolbar as the Sources Library: a search box (names only), a Sort button, ...
+  - a top border on the footer, and a list scrollbar that's always visible
+- Escape in the Filter popover closes only the popover, not the modal.
+- Fix the modal resetting itself whenever `Chat` re-rendered.
+- Apply React Doctor fixes: ...
 ```
 
-- Show UI structure as a component tree, including state and module boundaries that matter:
+**Good:**
 
-```text
-<SurveyEditor> (dashboard/src/pages/survey-editor.tsx)
-  useSurveyQuestions()
-  <QuestionList>
-    <MatrixQuestion> (dashboard-core)
+```
+- **retrieval-engine-v2**: `/sources/retrieve` takes optional `tagIds` and only searches sources that carry any of them (`tag_scope.py`). Unknown, inactive or other orgs' tags get a 400. With no tags, the search is unchanged.
+- **dashboard** (tag parts behind `retrieval-engine-tags`)
+  - Composer: a **Tags** picker for the first question (`SearchTagsButton`, `BadgePickerPopover`), with each tag's source count.
+  - `RelevantSourcesModal` redesign: the Sources Library toolbar, groups for Recommended / More in these tags / Everything else, and a footer listing the ticked sources.
+  - **Start Project** saves the tags on the project (`searchTags`) and shows them under the first question.
 ```
 
-- Show file responsibility or a broad refactor as a shallow file tree:
+### Visuals (rarely)
 
-```text
-src/
-├── rules/          # runtime answer rules
-├── formatting/     # rich text generation
-└── export/         # survey → editor normalisation
-```
+No visual by default. Add one only when bullets can't make the point:
 
-- Show cross-repo interaction, control flow, or data flow with Mermaid — the natural fit when a change spans several Bounce services:
+- **Mermaid**: the flow crosses 3+ services in an order that isn't obvious. Not for one endpoint with a new parameter.
+- **`diff`**: a contract someone else has to act on, like a shared type, request/response shape, stored document shape or config format. Not for one new optional field; a sentence covers that.
+- **Pseudocode**: a non-obvious algorithm or ordering rule.
+- **Table**: 3+ options or fields that change in the same structured way.
+
+Skip component and file trees. Screenshots in Evidence show the UI better, and the diff shows the files.
 
 ```mermaid
 sequenceDiagram
@@ -80,86 +90,10 @@ sequenceDiagram
     API-->>Dashboard: survey link
 ```
 
-- Use `diff` when the point is what changes and the surrounding shape already exists. Match the diff shape to the topic.
-
-For a call-tree change:
-
 ```diff
- shiftAndInsertQuestions
-   shiftQuestionIndexes
--  clearFormatting
-+  preserveFormattingArrays
-   insertQuestions
-```
-
-For a component change:
-
-```diff
- <SurveyEditor>
-   <QuestionList>
-+    <RefreshButton />
-   <QuestionPreview>
-```
-
-For a file-layout change:
-
-```diff
- src/
- ├── rules/
-+│   └── generate-formatting.ts   # rebuilds formatting at runtime
--└── formatting.ts
-+└── formatting/
-+    ├── matrix.ts
-+    └── single-choice.ts
-```
-
-For a state or control-flow change:
-
-```diff
- on(ruleOverwritesOptions)
--  update rowItems
-+  update rowItems
-+  regenerate rowItemsFormatting
-```
-
-- Show the whole block when most of it is new, when omitted context would hide ownership or order, or when the reviewer needs a copyable target shape.
-
-Place each visual next to the short text it supports. Keep only the calls, files, props, states, and boundaries needed to understand this PR. You may use one, you may use several — it is unlikely you will use all of them. Use your judgement and don't overwhelm the reviewer. A trivial change (copy tweak, config bump) needs no visual.
-
-### Bullets
-
-Use a **table** instead when 3+ fields, options, or behaviors change in the same structured way.
-
-- Start each bullet with a verb: "Update", "Add", "Remove", "Refactor", "Revert"
-- Wrap code identifiers in backticks
-- One clear action per bullet; don't repeat what the visual already shows
-- Single repo → plain bullets. Multiple repos → group by repo name with sub-bullets indented 3 spaces.
-
-**Bad:**
-
-```
-- Fixed some stuff
-- Made changes to the survey page
-```
-
-**Good — multiple repos:**
-
-```
-- **web-surveys**:
-   - Update `shiftAndInsertQuestions` to preserve formatting arrays
-   - Remove dead `clearFormatting` code path
-- **api**:
-   - Add `generateFormatting()` helper to runtime rule execution
-```
-
-**Good — table:**
-
-```markdown
-| Where options change | Formatting updated? |
-|---|---|
-| mainWpp creates questions | No formatting created at all |
-| exportSurveyToEditor normalizes | Yes — generates from current values |
-| pipeFamiliarBrandsRule (runtime) | NO — only updates rowItems |
+ retrievalEngineV2Files/{fileId}
+   name: "Q3 report.pdf"
++  tags: ["tagId1", "tagId2"]
 ```
 
 ## `## Evidence`
@@ -186,8 +120,6 @@ Use execution-based evidence: tests, typecheck or lint output, console output, a
   ```
 ````
 
-Follow it with one line on what the new tests cover, if that isn't obvious from their names.
-
 **A bug fix** shows the specific test that failed before and passes now:
 
 ```markdown
@@ -212,7 +144,7 @@ If the change isn't visual and there is no execution evidence either, omit the w
 
 ## Choosing visuals
 
-Pick per PR, by what the reviewer most needs to see. Most PRs need one or two of these, not all. Text visuals (pseudocode, call trees, Mermaid, `diff`) are under **Visual summary** above.
+Pick per PR, by what the reviewer most needs to see. Most PRs need one or two of these, not all. Visuals for `## Changes` are under **Visuals (rarely)** above.
 
 | Format | Best for |
 |---|---|
@@ -304,38 +236,37 @@ Bounce heuristics:
 
 ## `## Functionality Review`
 
-Write specific, numbered steps based on what was actually built. Do not write generic steps. URLs come from the service reference in `review-tool-format.md`.
+Keep it short and generic, so the reviewer follows the main path and then tries their own edge cases. The tests and the recording cover the fine detail.
+
+- Setup steps first: commands, branches, test accounts, data to load. Be exact here; the reviewer can't guess them.
+- Then 4–6 steps. Each is one flow in one or two short sentences: do X, see Y.
+- Cover the main path, one edge case, and the flag-off check if there's a flag.
+- Give exact expected values only when they're the point ("**Recommended** has 4 sources"). Don't list every item, colour or keyboard behaviour.
+- Name screens and buttons in **bold**. Write local service URLs as markdown links labelled with the service name: `Open [dashboard](http://localhost:3002)`, not `Open localhost`.
 
 ```
 1. Run `review-tool <primary-repo> <PR_NUMBER>` to set up all services.
-2. [Navigation step — where to go first]
-3. [Action step — what to do]
-4. [Verification step — what to confirm/expect]
+2. [Do the main flow] — [what you should see]
+3. [Variation or edge case] — [what you should see]
 ```
 
-`<PR_NUMBER>` is only known after the PR is created — write it as a literal placeholder; it gets filled in once the PR is open.
-
-Each step is one of:
-
-- **Setup** — run a command or open a URL
-- **Action** — click, fill in, submit
-- **Verification** — "Confirm that…", "Verify that…", "Check that…" — always end with the expected result
-
-Write local service URLs as markdown links labelled with the service name:
-
-- **Good** — `Open [dashboard](http://localhost:3002) and go to **My Surveys**.`
-- **Bad** — `Open localhost and go to My Surveys.`
+`<PR_NUMBER>` is only known after the PR is created. Write it as a literal placeholder; it gets filled in once the PR is open.
 
 **Bad:**
 
 > Test the feature.
 
+**Bad** (a QA script):
+
+> 13. Confirm the toolbar reads search, **Sort**, **Filter**, then **Clear filters** once something is picked. Open **Filter** and tick **Equipment** under Tag. Confirm only the 3 Equipment sources show, the button shows **1**, a pink **Tag · Equipment** box shows under the search, and the footer says **3 hidden by filters**. Press Escape: only the popover closes. ...
+
 **Good:**
 
 > 1. Run `review-tool dashboard 1234` to spin up all services.
-> 2. Open [dashboard](http://localhost:3002) and go to **My Surveys**.
-> 3. Click the refresh button and confirm it reads "Refresh this dashboard".
-> 4. Verify the list refreshes after clicking.
-> 5. Go to Trackers and confirm that button still reads "Refresh".
+> 2. Open [dashboard](http://localhost:3002) and go to **Retrieval Engine**. Without picking tags, ask "What stops people from playing more tennis?". **Recommended** has 4 sources.
+> 3. Start a **New Chat**, pick **Fans** and **Clubs and courts** under **Tags**, and ask a question. Only sources with those tags are recommended.
+> 4. Try **Sort** and **Filter** in the modal. **Clear filters** resets both.
+> 5. Click **Start Project**. The tags show under the first question, and follow-ups have no **Tags** button.
+> 6. Turn the flag off. There's no **Tags** button, and the modal still works.
 
 After drafting the steps, run the flow audit in `review-tool-format.md`.
