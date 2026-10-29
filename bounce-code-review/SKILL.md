@@ -19,11 +19,11 @@ ROOT="${REVIEW_DIR:-$HOME/review}"
 STATE="$ROOT/.code-review"
 TODAY=$(date +%F)
 mkdir -p "$STATE/notes/$TODAY" "$STATE/reports"
-find "$ROOT" -mindepth 2 -maxdepth 2 -name .git -type d -exec sh -c 'git -C "${1%/.git}" worktree prune' _ {} \;
 rm -rf "$ROOT/.wt"
+find "$ROOT" -mindepth 2 -maxdepth 2 -name .git -type d -exec sh -c 'git -C "${1%/.git}" worktree prune' _ {} \;
 ```
 
-The last two lines clear worktrees left by a crashed run (see **Large queues**).
+The last two lines clear worktrees left by a crashed run (see **Large queues**). Delete the directories before pruning: `prune` only drops worktrees whose directory is gone.
 
 - `ROOT/<repo>` are disposable review clones. Updating or resetting them is fine. Never touch `~/bounce`, which holds work in progress.
 - `STATE/state.json` maps `repo#number` to `{ "head": "<sha>", "reviewed": "<date>", "verdict": "..." }` from earlier runs.
@@ -138,8 +138,8 @@ find "$STATE/notes" -mindepth 1 -maxdepth 1 -type d ! -name "$TODAY" -exec rm -r
 Skip this cleanup if the run stopped before writing today's report. Worktree cleanup always runs:
 
 ```bash
-find "$ROOT" -mindepth 2 -maxdepth 2 -name .git -type d -exec sh -c 'git -C "${1%/.git}" worktree prune' _ {} \;
 rm -rf "$ROOT/.wt"
+find "$ROOT" -mindepth 2 -maxdepth 2 -name .git -type d -exec sh -c 'git -C "${1%/.git}" worktree prune' _ {} \;
 ```
 
 Questions about a PR already reviewed run in the main clone, in place, one PR at a time (Step 3). Check out the head SHA recorded in `state.json`, so the answer matches the reviewed code. If the PR has newer commits, say so.
@@ -148,16 +148,16 @@ Questions about a PR already reviewed run in the main clone, in place, one PR at
 
 ## Large queues
 
-With four or more groups, hand each group to a subagent and run them in parallel. With fewer, review in place in the main session.
+With three or more groups, hand each group to a subagent and run them in parallel. With fewer, review in place in the main session.
 
 Subagents share the clones in `ROOT`, so each one works in its own worktree:
 
-1. **Main session, before starting subagents:** run `sync-repos.sh` for every repo any group touches, then fetch every queued PR (the `fetch` in Step 3.2). Git locks refs during a fetch, so parallel fetches into one clone fail.
+1. **Main session, before starting subagents:** run `sync-repos.sh` for every repo any group touches plus the consumers Step 4 will grep, then fetch every queued PR (the `fetch` in Step 3.2). Git locks refs during a fetch, so parallel fetches into one clone fail.
 2. **Each subagent** gets the group's PRs, `ROOT`, `STATE`, the Step 2 notes and the paths of the reference files to read. For each PR it creates a worktree and reviews there:
    ```bash
    WT="$ROOT/.wt/<group>-<repo>-<n>"
    git -C "$ROOT/<repo>" worktree add -q --detach "$WT" pr-<n>
    ```
-   It follows Steps 3–5 with `$WT` as `$REPO`, but greps consumers in the main clones, which stay on their base branch. It never checks out anything in a main clone. Findings use `repo/path:line`, never the worktree path.
+   It follows Steps 3.3–3.6, 4 and 5 with `$WT` as `$REPO`, and greps consumers in the main clones, which stay on their base branch. From Step 3.2 it runs only the two `diff` commands. It skips Steps 3.1 and 3.7: no `sync-repos.sh`, no fetch, and no checkout in a main clone. Findings use `repo/path:line`, never the worktree path.
 3. **When its group is done**, the subagent writes candidates to the notes file and removes its worktrees: `git -C "$ROOT/<repo>" worktree remove --force "$WT"`.
 4. **Step 6 runs in the main session after every subagent has finished**, so one consistent bar applies to every finding and no checkout in a main clone moves a tree a subagent is reading. Re-open anchored lines by checking the PR out in place, as in Step 3.
