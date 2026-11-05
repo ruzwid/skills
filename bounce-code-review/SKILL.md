@@ -35,7 +35,7 @@ Run `scripts/find-prs.sh`. It prints one JSON object per PR with `repo`, `number
 
 - **Requested** PRs get a full review. Drafts included, marked `_draft_`.
 - **Mine** PRs get the same full review, with the same bar. They are not optional and not lower priority: catching my own bugs before a teammate does is half the point of this run. I can't approve my own PR, so their verdict is only a readiness signal. The only skip is my **drafts** not updated in 14 days; list them in one line under Coverage gaps.
-- **Unchanged** groups: if every PR in a group (Step 2) has the same head SHA as in `state.json`, don't re-review it. Copy that group's section verbatim from the most recent report in `STATE/reports/` into today's Unchanged section (format in `references/output.md`). If any PR in the group has new commits, re-review the whole group. If the section can't be found in the latest report, re-review it.
+- **Unchanged** groups: if every PR in a group (Step 2) has the same head SHA as in `state.json`, don't re-review it. Copy that group's section verbatim from the most recent report in `STATE/reports/` into today's Unchanged section (format in `references/output.md`). If any PR in the group has new commits, re-review the whole group, and save its section from the latest report to `STATE/notes/$TODAY/<group>.prev.md` so Step 6 can carry its findings forward. If the section can't be found in the latest report, re-review it.
 
 Save the script's output to `STATE/notes/$TODAY/queue.jsonl`. **Every line in it must end up in the report**: in a group table, under Unchanged, or under Coverage gaps with a reason. Step 7 checks this.
 
@@ -53,6 +53,20 @@ gh pr view <n> -R bounceinsights/<repo> \
 - **Reviewers**: say who else is asked or has reviewed only from `reviewRequests` and `latestReviews`. Never infer a name from the author, the ticket or the repo.
 - **Stacks**: a `baseRefName` that isn't the repo's default branch means stacked. Diff against `baseRefName` so only this PR's changes are reviewed. Resolve the parent with `gh pr list -R bounceinsights/<repo> --head <baseRefName> --state all --json number,state`. If the base ref can't be fetched, mark the PR "not reviewed: base unresolvable"; never fall back to the default branch.
 - **Referenced PRs** that didn't request my review are context only: name them in the group's **Not reviewed (not requested)** line.
+- **Existing discussion**: read what's already been said on each PR, by teammates, bots and me, so Step 6 doesn't repeat it:
+  ```bash
+  gh api graphql -F owner=bounceinsights -F repo=<repo> -F number=<n> -f query='
+  query($owner: String!, $repo: String!, $number: Int!) {
+    repository(owner: $owner, name: $repo) {
+      pullRequest(number: $number) {
+        reviewThreads(first: 100) { nodes { isResolved isOutdated path line originalLine comments(first: 20) { nodes { author { login } body } } } }
+        reviews(last: 30) { nodes { author { login } state body } }
+        comments(last: 50) { nodes { author { login } body } }
+      }
+    }
+  }'
+  ```
+  Note each raised issue, who raised it, and whether the thread is resolved or has an author reply. Write the notes to the group's notes file.
 
 ## Step 3: Read the code
 
@@ -116,7 +130,18 @@ Read `references/finding-bar.md` and apply it to each candidate before it reache
 1. Re-open the anchored lines (check the PR out again if the repo was already parked) and try to **refute** the finding: pre-existing, handled elsewhere, intentional per the PR body or ticket, unreachable, or caught by the typechecker (TS repos only).
 2. Score confidence 0–100 with the rubric there. Keep 80+. A 50–79 finding survives only as a **question** the author can answer. Drop the rest.
 3. Deduplicate: one root cause across several PRs is one finding with several locations.
-4. Cap at 8 findings per PR: keep every blocking finding and the best nits, and say how many were trimmed.
+4. **Check against what's already been said** (Step 2 notes):
+   - Raised in an unresolved thread with no answer: keep it at its severity, tagged `_(raised by @login)_`. It still counts toward the verdict, but isn't posted again.
+   - Answered by the author ("intentional", "handled in X"): treat the answer as evidence in the refute step. Drop the finding if it holds. If it doesn't, keep the finding and say why the answer doesn't cover it.
+   - Resolved with a fix: check the fix at the current head. If the issue is still there, keep it tagged `_(raised by @login)_` and say what the fix missed.
+5. **Carry earlier findings forward** for a group re-reviewed after new commits (`<group>.prev.md`). Re-check each earlier finding at the new head and mark it:
+   - **Fixed**: the anchored code changed and the issue no longer reproduces. Name the commit.
+   - **Still open**: re-anchor it at the new head and keep it, tagged `_(still open since <date>)_`.
+   - **Answered**: the author explained it on the PR and the explanation holds.
+   - **No longer applies**: the code was removed or rewritten. Review the new code fresh; don't call it fixed.
+
+   Only issues that weren't raised before count as new. Never re-raise a Fixed or Answered finding.
+6. Cap at 8 findings per PR: keep every blocking finding and the best nits, and say how many were trimmed.
 
 ## Step 7: Report
 
