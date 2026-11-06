@@ -53,19 +53,23 @@ gh pr view <n> -R bounceinsights/<repo> \
 - **Reviewers**: say who else is asked or has reviewed only from `reviewRequests` and `latestReviews`. Never infer a name from the author, the ticket or the repo.
 - **Stacks**: a `baseRefName` that isn't the repo's default branch means stacked. Diff against `baseRefName` so only this PR's changes are reviewed. Resolve the parent with `gh pr list -R bounceinsights/<repo> --head <baseRefName> --state all --json number,state`. If the base ref can't be fetched, mark the PR "not reviewed: base unresolvable"; never fall back to the default branch.
 - **Referenced PRs** that didn't request my review are context only: name them in the group's **Not reviewed (not requested)** line.
-- **Existing discussion**: read what's already been said on each PR, by teammates, bots and me, so Step 6 doesn't repeat it:
+- **Existing discussion**: read everything already said on each PR, by teammates, bots and me, so Step 6 doesn't repeat it. Each command pages through its whole list:
   ```bash
-  gh api graphql -F owner=bounceinsights -F repo=<repo> -F number=<n> -f query='
-  query($owner: String!, $repo: String!, $number: Int!) {
+  gh api graphql --paginate -F owner=bounceinsights -F repo=<repo> -F number=<n> -f query='
+  query($owner: String!, $repo: String!, $number: Int!, $endCursor: String) {
     repository(owner: $owner, name: $repo) {
       pullRequest(number: $number) {
-        reviewThreads(first: 100) { nodes { isResolved isOutdated path line originalLine comments(first: 20) { nodes { author { login } body } } } }
-        reviews(last: 30) { nodes { author { login } state body } }
-        comments(last: 50) { nodes { author { login } body } }
+        reviewThreads(first: 100, after: $endCursor) {
+          pageInfo { hasNextPage endCursor }
+          nodes { isResolved isOutdated path line originalLine comments(first: 100) { totalCount nodes { author { login } body } } }
+        }
       }
     }
   }'
+  gh api --paginate repos/bounceinsights/<repo>/pulls/<n>/reviews --jq '.[] | {user: .user.login, state, body}'
+  gh api --paginate repos/bounceinsights/<repo>/issues/<n>/comments --jq '.[] | {user: .user.login, body}'
   ```
+  A thread whose `totalCount` is over 100 has more replies: read them all with `gh api --paginate repos/bounceinsights/<repo>/pulls/<n>/comments` (replies carry `in_reply_to_id`).
   Note each raised issue, who raised it, and whether the thread is resolved or has an author reply. Write the notes to the group's notes file.
 
 ## Step 3: Read the code
@@ -135,7 +139,7 @@ Read `references/finding-bar.md` and apply it to each candidate before it reache
    - Answered by the author ("intentional", "handled in X"): treat the answer as evidence in the refute step. Drop the finding if it holds. If it doesn't, keep the finding and say why the answer doesn't cover it.
    - Resolved with a fix: check the fix at the current head. If the issue is still there, keep it tagged `_(raised by @login)_` and say what the fix missed.
 5. **Carry earlier findings forward** for a group re-reviewed after new commits (`<group>.prev.md`). Re-check each earlier finding at the new head and mark it:
-   - **Fixed**: the anchored code changed and the issue no longer reproduces. Name the commit.
+   - **Fixed**: the issue no longer reproduces, even if the fix changed code elsewhere. Name the commit.
    - **Still open**: re-anchor it at the new head and keep it, tagged `_(still open since <date>)_`.
    - **Answered**: the author explained it on the PR and the explanation holds.
    - **No longer applies**: the code was removed or rewritten. Review the new code fresh; don't call it fixed.
