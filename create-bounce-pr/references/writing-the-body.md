@@ -73,7 +73,7 @@ A few bullets per repo. Name the endpoints, components and fields that were adde
 
 No visual by default. Add one only when bullets can't make the point:
 
-- **Visual explainer**: how the change works under the hood: the services it touches, the routes and functions in order, what passes between them, and what's new. Draw it as a card-based system map, not a UI mockup or Mermaid: follow `references/visual-explainers.md`.
+- **Visual explainer**: how the change works under the hood: the services it touches, the routes and functions in order, what passes between them, and what's new. Draw it with cards, as simple or detailed as the change needs, not a UI mockup or Mermaid: follow `references/visual-explainers.md`.
 - **`diff`**: a contract someone else has to act on, like a shared type, request/response shape, stored document shape or config format. Not for one new optional field; a sentence covers that.
 - **Pseudocode**: a non-obvious algorithm or ordering rule.
 - **Table**: 3+ options or fields that change in the same structured way.

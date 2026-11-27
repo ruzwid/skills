@@ -1,38 +1,79 @@
 # Visual explainers
 
-An explainer shows how the change works under the hood: the services it touches, what passes between them, the call chain inside them, and where state is stored. It's for architecture, data flow and backend behaviour. Product screens belong in Evidence as screenshots, not here; don't mock the UI.
+An explainer shows how the change works under the hood: the pieces it touches, what passes between them, and what's new. It's for architecture, data flow and backend behaviour. Product screens belong in Evidence as screenshots; don't mock the UI.
 
 GitHub can't render custom HTML in a PR body, so build the explainer as a static HTML page, render it to a PNG with playwright-cli, and attach it like a screenshot. Use Mermaid only for relationships too tangled for cards (a state machine with many transitions) or notation a reviewer expects.
 
-## Layout
+## Decide what to draw
 
-Pick the one that answers the reviewer's main question. If it isn't obvious, render two or three and let the user choose before attaching.
+There's no required layout. Work out the one question a reviewer has about this PR, then draw the simplest picture that answers it. Let the change decide the shape.
 
-- **System map** (default): the service that changed is a large card in the middle, holding its route and its call chain in order. The services it talks to (other repos, Firestore, Weaviate, Langfuse, an LLM) are small cards on the left and right. Each connector runs from the row that makes the call to the service it calls.
-- **Swimlanes:** one row per system and one column per step; each card is the work that system does at that step. For "who does what, in what order".
-- **Data journey:** the data's shape at each step as small JSON blocks (request, stored document, model input and answer, final document). For changes whose point is the data.
+Detail is a range, not a choice between templates:
 
-## Content
+- **Simple:** a handful of cards with a name and a one-line subtitle, stacked or side by side, with arrows between them, and maybe a short list inside one card. Good for "what are the pieces and how do they connect": a new service, a new layer, an overview a reviewer reads in five seconds. Code names are optional.
+- **Detailed:** the changed service as a large card holding its route and call chain in order, nested cards for each step, the services it calls as side cards, and labelled connectors from the exact row that makes each call. Good when the reviewer needs to find every box in the diff: a backend flow across repos, or a change where order, skipping or failure handling is the point.
+- **Anything between or beside those:** before and after side by side, a timeline, the data's shape at each step, a grid of who can do what. Invent the shape if none of these fit.
 
-- **Real names.** Routes (`POST /api/v1/files/indexing`), functions (`auto_tag_file()`), file paths (`tags/auto_tag.py`), constants and models. A reviewer should be able to find each box in the diff.
-- **Connector labels** say what passes, in one or two words: `auto_tag`, `prompt`, `1 call`, `tags`, `status`.
-- **Emphasis by change:**
-  - **New:** olive border, olive tint, solid olive **New** pill, solid olive connectors.
-  - **Changed:** olive outline **Changed** pill (dashed border on the box).
-  - **Unchanged:** no badge, muted text, grey connectors. Only enough of it to place the change.
-- **Edge cases in one line** under the map, e.g. when a step is skipped. Numbers only if measured.
+If it isn't obvious which level helps, render two and let the user pick before attaching. If a picture needs more than about a dozen boxes, text below 13px or crossing connectors, cut unchanged context or split it into two images.
+
+## What makes one readable
+
+- **Title** names the feature; a one-line subtitle says what happens in plain words.
+- **Real names** when you show code: routes (`POST /api/v1/files/indexing`), functions (`auto_tag_file()`), file paths (small and muted), constants and models. A reviewer should be able to find each box in the diff.
+- **Nesting shows containment, arrows show calls or data.** Label a connector with what passes, in one or two words: `auto_tag`, `prompt`, `tags`, `status`.
+- **Mark what changed** with the design system's New and Changed styles, keep unchanged context muted, and add a small legend when you use the badges. Show only enough unchanged context to place the change.
+- **Edge cases in one line** in a footer, such as when a step is skipped. Numbers only if measured.
 
 ## Style
 
-Granola light: copy the whole CSS block from `references/granola-design.md`, the `@import` line and `:root`, to the top of the template's `<style>`. The `@import` must come first or the fonts won't load.
+Use the tokens in `references/design-system.md` for colours, fonts, radii, borders and shadow. They set the look, not the layout.
 
-## Template
+## Building it
 
-Write `/tmp/bounce-pr/evidence/explainer.html`. Side cards are positioned and connectors drawn by the script, from the elements' measured positions, so nothing needs hand-aligning: give each anchor row an `id`, list the ids a side card serves in `data-anchor`, and list the connectors in `WIRES`.
+Write `/tmp/bounce-pr/evidence/explainer.html` with everything inside `<div id="explainer">`, sized to the content (about 600px wide for a simple stack, up to 1200px for a wide map). When the fonts have loaded and any layout script has run, set `document.body.dataset.ready = "1"`; the render step waits for it.
+
+Two sketches from opposite ends of the range follow. They're examples, not templates: change the structure freely.
+
+### Simple: stacked layers
+
+Plain flexbox and arrow glyphs; no script beyond the ready flag.
 
 ```html
 <!doctype html><html><head><meta charset="utf-8"><style>
-/* CSS block from granola-design.md: @import first, then :root */
+/* the CSS block from design-system.md: @import first, then :root */
+* { box-sizing: border-box; margin: 0; }
+body { background: var(--page); color: var(--ink); font: 15px/22px var(--body); }
+#explainer { width: 640px; padding: 36px 28px 28px; background: var(--page); }
+h1 { font: 600 28px/34px var(--display); margin-bottom: 20px; }
+.frame { border: 1px solid var(--border); border-radius: 28px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.layer { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px; text-align: center; }
+.layer.filled { background: var(--fill); border-color: transparent; }
+.layer h2 { font: 600 20px/26px var(--display); }
+.layer p { color: var(--muted); }
+.items { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; margin-top: 12px; }
+.row { width: 100%; display: flex; gap: 10px; } .row .layer { flex: 1; }
+.arrow { color: var(--line); font-size: 18px; line-height: 1; }
+</style></head><body><div id="explainer">
+  <h1>How uploads get tagged</h1>
+  <div class="frame">
+    <div class="layer filled"><h2>Dashboard</h2><p>Sources page · upload</p></div>
+    <div class="arrow">↓</div>
+    <div class="layer"><h2>Retrieval Engine</h2><p>FastAPI</p>
+      <div class="items"><span>Index pages</span><span>Build catalog card</span><span>Pick tags</span><span>Save status</span></div>
+    </div>
+    <div class="arrow">↓</div>
+    <div class="row"><div class="layer"><h2>Weaviate</h2></div><div class="layer"><h2>Gemini Flash</h2></div><div class="layer"><h2>Firestore</h2></div></div>
+  </div>
+</div><script>document.fonts.ready.then(() => { document.body.dataset.ready = "1"; });</script></body></html>
+```
+
+### Detailed: system map with drawn connectors
+
+Use this script when connectors have to start from a particular row inside a card and end on another card. Side cards are positioned and connectors drawn from the elements' measured positions, so nothing needs hand-aligning: give each anchor row an `id`, list the ids a side card serves in `data-anchor`, and list the connectors in `WIRES`.
+
+```html
+<!doctype html><html><head><meta charset="utf-8"><style>
+/* the CSS block from design-system.md: @import first, then :root */
 * { box-sizing: border-box; margin: 0; }
 body { background: var(--page); color: var(--ink); font: 14px/20px var(--body); }
 #explainer { width: 1160px; padding: 40px 32px 32px; background: var(--page); }
@@ -60,7 +101,8 @@ code { font-family: var(--mono); font-size: 12.5px; }
 svg.wires { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
 .wire { fill: none; stroke: #CFCFC6; stroke-width: 1.5; } .wire.new { stroke: var(--primary); stroke-width: 2; }
 .wlabel { font: 500 11.5px var(--body); fill: var(--muted); } .wlabel.new { fill: var(--primary); font-weight: 600; }
-.foot { margin-top: 20px; font-size: 13px; color: var(--muted); }
+.foot { margin-top: 20px; font-size: 13px; color: var(--muted); display: flex; justify-content: space-between; gap: 24px; }
+.legend { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 </style></head><body><div id="explainer">
   <header><h1>Auto-tagging on upload</h1><p>One line on what happens, in plain words.</p></header>
   <div class="map" id="map">
@@ -77,7 +119,7 @@ svg.wires { position: absolute; inset: 0; pointer-events: none; overflow: visibl
     </div>
     <svg class="wires" id="wires"></svg>
   </div>
-  <p class="foot">Edge cases in one line.</p>
+  <div class="foot"><span>Edge cases in one line.</span><span class="legend"><span class="pill new">New</span> added <span class="pill chg">Changed</span> behaviour changed</span></div>
 </div>
 <script>
 // from → to; `kind: "new"` draws it in olive.
@@ -113,6 +155,7 @@ function layout() {
     html += `<path class="wire ${cls}" d="${d}" marker-end="url(#${cls ? "mn" : "m"})"/><text class="wlabel ${cls}" x="${labelX}" y="${y - 7}" text-anchor="middle">${w.label}</text>`;
   }
   document.getElementById("wires").innerHTML = html;
+  document.body.dataset.ready = "1";
 }
 document.fonts.ready.then(layout);
 </script></body></html>
@@ -130,7 +173,7 @@ python3 -I -c 'import json; html = open("explainer.html").read(); open("shot.js"
   const context = await page.context().browser().newContext({ viewport: { width: 1240, height: 1400 }, deviceScaleFactor: 2 });
   const p = await context.newPage();
   await p.setContent(%s, { waitUntil: "networkidle" });
-  await p.waitForFunction(() => document.getElementById("wires").innerHTML.length > 0);
+  await p.waitForFunction(() => document.body.dataset.ready === "1");
   await p.locator("#explainer").screenshot({ path: "/tmp/bounce-pr/evidence/explainer.png" });
   await context.close();
   return "ok";
