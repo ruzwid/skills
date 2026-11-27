@@ -24,7 +24,7 @@ Pick the one that answers the reviewer's main question. If it isn't obvious, ren
 
 ## Style
 
-Granola light: copy the `:root` block from `references/granola-design.md` into the template.
+Granola light: copy the whole CSS block from `references/granola-design.md`, the `@import` line and `:root`, to the top of the template's `<style>`. The `@import` must come first or the fonts won't load.
 
 ## Template
 
@@ -32,7 +32,7 @@ Write `/tmp/bounce-pr/evidence/explainer.html`. Side cards are positioned and co
 
 ```html
 <!doctype html><html><head><meta charset="utf-8"><style>
-/* :root from granola-design.md */
+/* CSS block from granola-design.md: @import first, then :root */
 * { box-sizing: border-box; margin: 0; }
 body { background: var(--page); color: var(--ink); font: 14px/20px var(--body); }
 #explainer { width: 1160px; padding: 40px 32px 32px; background: var(--page); }
@@ -102,10 +102,15 @@ function layout() {
   map.style.height = Math.max(main.y + main.h, bottoms.left, bottoms.right) + "px";
   let html = '<defs><marker id="m" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#CFCFC6"/></marker><marker id="mn" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#5B6F00"/></marker></defs>';
   for (const w of WIRES) {
+    // A side card pushed below its row gets an elbow, so the line still ends on the card.
     const a = box(w.from), b = box(w.to), right = b.x > a.x, cls = w.kind === "new" ? "new" : "";
-    const y = w.from.startsWith("svc") ? b.cy : a.cy, x1 = right ? a.x + a.w : a.x, x2 = right ? b.x : b.x + b.w;
-    const labelX = w.from.startsWith("svc") ? (x1 + main.x) / 2 : right ? (main.x + main.w + x2) / 2 : (x2 + main.x) / 2;
-    html += `<path class="wire ${cls}" d="M${x1} ${y} H${x2}" marker-end="url(#${cls ? "mn" : "m"})"/><text class="wlabel ${cls}" x="${labelX}" y="${y - 7}" text-anchor="middle">${w.label}</text>`;
+    const fromSide = w.from.startsWith("svc"), side = fromSide ? a : b, y = fromSide ? b.cy : a.cy;
+    const ySide = Math.min(Math.max(y, side.y + 18), side.y + side.h - 18);
+    const x1 = right ? a.x + a.w : a.x, x2 = right ? b.x : b.x + b.w, step = right ? 14 : -14;
+    const xBend = fromSide ? x1 + step : x2 - step, [y1, y2] = fromSide ? [ySide, y] : [y, ySide];
+    const d = y1 === y2 ? `M${x1} ${y1} H${x2}` : `M${x1} ${y1} H${xBend} V${y2} H${x2}`;
+    const labelX = fromSide ? (xBend + x2) / 2 : (x1 + xBend) / 2;
+    html += `<path class="wire ${cls}" d="${d}" marker-end="url(#${cls ? "mn" : "m"})"/><text class="wlabel ${cls}" x="${labelX}" y="${y - 7}" text-anchor="middle">${w.label}</text>`;
   }
   document.getElementById("wires").innerHTML = html;
 }
