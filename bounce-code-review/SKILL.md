@@ -151,7 +151,7 @@ Read `references/finding-bar.md` and apply it to each candidate before it reache
 
 Before writing, reconcile against `STATE/notes/$TODAY/queue.jsonl`: count its `requested` and `mine` lines, and confirm each PR appears in a table, under Unchanged, or under Coverage gaps. If any is missing, review it now. Never drop one silently.
 
-Write the report exactly as `references/output.md` describes, save it to `STATE/reports/$TODAY.md`, and print it as the final answer. End the answer with a link to the saved file: `Report: [$TODAY.md](<absolute path>)`.
+Write the report exactly as `references/output.md` describes, save it to `STATE/reports/$TODAY.md`, and print it as the final answer **word for word**: every group, and every Unchanged section with its table, **What it does**, findings and recommendation. Never shorten a section, collapse an unchanged group to one line, or summarize the report for chat; I read the chat, not the file. End the answer with a link to the saved file: `Report: [$TODAY.md](<absolute path>)`.
 
 The same goes for follow-ups in the same session ("review these please: <urls>"): review them with this skill's steps, add their group sections to today's report, and answer in chat with those sections exactly as written to the report, each starting with its table. Never rewrite them as prose or bullets for chat.
 
