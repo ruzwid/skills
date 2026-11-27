@@ -73,7 +73,7 @@ A few bullets per repo. Name the endpoints, components and fields that were adde
 
 No visual by default. Add one only when bullets can't make the point:
 
-- **Visual explainer**: how the change fits together, such as the screens and services it touches, a new flow, or where a check now happens. Draw it as a card-based UI image, not a diagram: follow `references/visual-explainers.md`.
+- **Visual explainer**: a picture that lets the reviewer see at a glance what the PR does and how it works, then look closer to judge the implementation: the services it touches, the steps in order, what passes between them, failure paths and what's new. Draw it with cards, as simple or detailed as the change needs, not a UI mockup or Mermaid: follow `references/visual-explainers.md`.
 - **`diff`**: a contract someone else has to act on, like a shared type, request/response shape, stored document shape or config format. Not for one new optional field; a sentence covers that.
 - **Pseudocode**: a non-obvious algorithm or ordering rule.
 - **Table**: 3+ options or fields that change in the same structured way.
