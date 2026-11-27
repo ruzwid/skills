@@ -1,18 +1,25 @@
 # Visual explainers
 
-An explainer shows how the change works under the hood: the pieces it touches, what passes between them, and what's new. It's for architecture, data flow and backend behaviour. Product screens belong in Evidence as screenshots; don't mock the UI.
+An explainer is the fastest way for a reviewer to understand a PR. At a glance it shows what the PR does and how it's built. Looking closer, it shows enough of the implementation to judge it: whether the design is sound, where it could break, and what they'd push back on. It's for architecture, data flow and backend behaviour. Product screens belong in Evidence as screenshots; don't mock the UI.
 
 GitHub can't render custom HTML in a PR body, so build the explainer as a static HTML page, render it to a PNG with playwright-cli, and attach it like a screenshot. Use Mermaid only for relationships too tangled for cards (a state machine with many transitions) or notation a reviewer expects.
 
 ## Decide what to draw
 
-There's no required layout. Work out the one question a reviewer has about this PR, then draw the simplest picture that answers it. Let the change decide the shape.
+There's no required layout. Draw what this PR needs a reviewer to see, and let the change decide the shape. It should work at two depths:
+
+- **At a glance:** the title, subtitle and the New and Changed parts say what the PR does and where it lives, in about five seconds.
+- **On a closer look:** the decisions a reviewer would judge are visible, not buried in the diff: where the new logic sits and what it calls, what triggers it, what it reads and writes, the order of steps, what happens when something fails or is skipped, and limits such as timeouts, retries, caps and flags. If one of these is the risky part of the PR, make it prominent.
+
+Leave out whatever doesn't help someone understand or judge the change.
 
 Detail is a range, not a choice between templates:
 
 - **Simple:** a handful of cards with a name and a one-line subtitle, stacked or side by side, with arrows between them, and maybe a short list inside one card. Good for "what are the pieces and how do they connect": a new service, a new layer, an overview a reviewer reads in five seconds. Code names are optional.
 - **Detailed:** the changed service as a large card holding its route and call chain in order, nested cards for each step, the services it calls as side cards, and labelled connectors from the exact row that makes each call. Good when the reviewer needs to find every box in the diff: a backend flow across repos, or a change where order, skipping or failure handling is the point.
 - **Anything between or beside those:** before and after side by side, a timeline, the data's shape at each step, a grid of who can do what. Invent the shape if none of these fit.
+
+Before attaching, check the PNG against this: could someone who hasn't read the diff say what the PR does and how, and name the one thing they'd question? If not, change what's shown, not just how it looks.
 
 If it isn't obvious which level helps, render two and let the user pick before attaching. If a picture needs more than about a dozen boxes, text below 13px or crossing connectors, cut unchanged context or split it into two images.
 
@@ -22,7 +29,7 @@ If it isn't obvious which level helps, render two and let the user pick before a
 - **Real names** when you show code: routes (`POST /api/v1/files/indexing`), functions (`auto_tag_file()`), file paths (small and muted), constants and models. A reviewer should be able to find each box in the diff.
 - **Nesting shows containment, arrows show calls or data.** Label a connector with what passes, in one or two words: `auto_tag`, `prompt`, `tags`, `status`.
 - **Mark what changed** with the design system's New and Changed styles, keep unchanged context muted, and add a small legend when you use the badges. Show only enough unchanged context to place the change.
-- **Edge cases in one line** in a footer, such as when a step is skipped. Numbers only if measured.
+- **Edge cases in one line** in a footer, such as when a step is skipped, unless one is the risky part of the PR; then draw it. Numbers only if measured.
 
 ## Style
 
