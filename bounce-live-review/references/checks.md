@@ -6,7 +6,8 @@
 
 - `_review`: the repo and PR the environment runs.
 - `<repo>.url`, `<repo>.log`: where each app answers and where its server log goes. `dashboard.ui_paths.login` is the login path.
-- `dashboard-api.firestore_emulator`, `dashboard-api.sign_in_url`: the Firestore emulator and the Auth emulator sign-in endpoint.
+- `dashboard-api.firestore_emulator`: the Firestore emulator.
+- `_auth.sign_in_url`: the Auth emulator sign-in endpoint. Use this one; `dashboard-api.sign_in_url` is a copy.
 - `_auth.accounts` (email, password, uid), `_auth.defaults` (`bounce_admin`, `client_user`) and `_auth.clear_session_js`.
 
 Never write a password into a plan, result, report or chat. Read it from the manifest when you type it.

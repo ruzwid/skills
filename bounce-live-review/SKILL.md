@@ -77,14 +77,13 @@ There is one environment: fixed ports and one emulator. Groups never run in para
    nohup bash "$REVIEW_TOOL" <repo> <pr> > "$LIVE/<group>/review-tool.log" 2>&1 &
    echo $! > "$LIVE/<group>/review-tool.pid"
    ```
-2. Wait for `Review process initiated successfully` in the log. Use the Monitor tool when you have it; otherwise check every minute. Stop and report the relevant lines on `ERROR`, `Failed to fetch Pull Request description`, or no new output for 10 minutes.
-3. Confirm it really started:
+2. Wait for `Review process initiated successfully` in the log, with the Monitor tool or one background `until` loop (see **Keep it cheap**). Stop and report the relevant lines on `ERROR`, `Failed to fetch Pull Request description`, or no new output for 10 minutes.
+3. **PR setup steps** beyond what review-tool does (e.g. `sh ./scripts/dev_local_startup.sh` in retrieval-engine-v2, which review-tool only clones, or indexing test files): run them now, before judging what's up, but only if they act on `$REVIEW_DIR` checkouts and local services. Anything that deploys, writes to a cloud resource, or needs credentials beyond the emulator: mark the checks that need it `BLOCKED` and say so.
+4. Confirm everything is up:
    - `$REVIEW_DIR/review-manifest.json` has `_review` = this PR.
-   - Every repo in the PR's Repositories to Review (except `emulator-data`) has an entry.
-   - Each entry's `url` answers. Allow a minute or two for dev servers to compile.
+   - Every repo in the PR's Repositories to Review (except `emulator-data`) is running: it has a manifest entry whose `url` answers, or it was started by a setup step and answers on its port. Allow a minute or two for dev servers to compile.
 
-   A repo that doesn't come up makes its checks `BLOCKED`, with the log lines that say why.
-4. **PR setup steps** beyond what review-tool does (e.g. `sh ./scripts/dev_local_startup.sh` in retrieval-engine-v2, or indexing test files): run them only if they act on `$REVIEW_DIR` checkouts and local services. Anything that deploys, writes to a cloud resource, or needs credentials beyond the emulator: mark the checks that need it `BLOCKED` and say so.
+   Only now, a repo that still doesn't answer makes its checks `BLOCKED`, with the log lines that say why.
 
 ## Step 4: Run the checks
 
@@ -92,6 +91,7 @@ Follow `references/checks.md` for personas, recording, UI, API and log checks, a
 
 - Run every group in this session, one after another, and write `$LIVE/<group>/results.md` as soon as a group is done, so a context compaction never loses work. Subagents would start cold and re-read everything.
 - Record every check, so each result has a video. Videos cost no tokens; reading them does.
+- **After every check**, before choosing its result, read `console --all` and `requests --all` for the time it ran. A new console error or a 4xx/5xx caused by the change is a finding even when the check passed. Folding these reads into the check's `run-code` script keeps it to one call.
 
 ## Step 5: Judge the results
 
@@ -107,7 +107,6 @@ Finding checks also say **reproduced** or **not reproduced**. Not reproducing a 
 Before reporting a FAIL:
 1. Rule out the environment: the service is up, its log has no startup error, and the persona and data are right. An environment problem is `BLOCKED`.
 2. Find the cause in the code and anchor it to `repo/path:line` at the PR's head, applying bounce-code-review's `references/finding-bar.md`. A FAIL with no cause in the diff is reported as one, marked "cause not found".
-3. Check the console (`console --all`) and failed requests (`requests --all`) for the check. A new console error or 5xx caused by the change is a finding even if the check passed.
 
 ## Step 6: Report
 
@@ -117,7 +116,7 @@ Write each group's section as `references/output.md` describes:
 3. Add each new FAIL cause to that group's **Blocking** or **Nits**, tagged `_(reproduced live, check <n>)_`.
 4. Re-derive the row and group verdicts.
 
-Print the group sections in chat word for word, then `Report: [$TODAY.md](<absolute path>)`.
+Print the group sections in chat word for word. End with a link to what was written: `Report: [$TODAY.md](<absolute path>)` when the sections went into today's report, otherwise one `Results: [<group>](<absolute path to results.md>)` line per group.
 
 ## Step 7: Clean up
 
