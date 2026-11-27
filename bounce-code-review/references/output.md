@@ -69,6 +69,8 @@ Each unchanged group's section, copied verbatim from the latest report: same hea
 
 Use the `reviewed` date from `state.json`. Don't edit the copied findings; if one looks wrong now, re-review the group instead. Write `None.` when there are none.
 
+The chat answer shows these sections in full too, never as a one-line "no new commits" summary, so I can still see what each group is about.
+
 **Cross-group stack chains**: only when a chain crosses ticket groups:
 `admin-v2: #638 → #639 (BOUN-11331) → #640 (BOUN-11332). #640 has a blocking finding, so approving BOUN-11331 doesn't unblock it.`
 
