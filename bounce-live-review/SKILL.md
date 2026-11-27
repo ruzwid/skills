@@ -2,7 +2,7 @@
 name: bounce-live-review
 description: Test bounceinsights PR groups live in a real browser against the local review environment (bounce-tools review-tool.sh), with playwright-cli. Runs the PR's Functionality Review, tries to reproduce the code review's findings, tries to break the change, records a video per check, and adds a Live check section to today's review report. Run only when explicitly invoked, usually after bounce-code-review in the same thread.
 disable-model-invocation: true
-effort: high
+effort: medium
 argument-hint: "<BOUN-XXXXX | repo#number | PR url> [...]  (omit to pick from today's report)"
 allowed-tools: Bash(playwright-cli:*)
 ---
@@ -32,12 +32,21 @@ find "$STATE/live" -mindepth 1 -maxdepth 1 -type d -mtime +7 -exec rm -rf {} +
 - Open every browser session with `--config="$LIVE/playwright-cli.json"`. `locateOnlyVisible` stops clicks failing on hidden duplicate elements.
 - Only ever act on `localhost` URLs and the local emulators. Stop if a step points at a deployed environment.
 
+## Keep it cheap
+
+I'm on a small plan. Spend tokens where they change the verdict:
+
+- **Batch known steps.** Once a check's locators are known, run its actions and reads as one `run-code` script that returns a short summary, instead of one command per click. Use single commands only to find a locator you don't know.
+- **Wait without polling.** Wait for review-tool with the Monitor tool, or one background `until grep -q 'Review process initiated successfully' <log>; do sleep 30; done`. Never check the log by hand in a loop.
+- **Read narrowly.** `find --max-results=5`, not whole snapshots. Don't Read screenshots or videos unless a FAIL needs it.
+- **Stop early.** If the environment can't support most of a group's checks, mark them `BLOCKED` and move on rather than working around it.
+
 ## Step 1: Preconditions
 
 Check all of these before starting anything, and stop with exactly what to fix if one fails:
 
 1. `playwright-cli --version` is 0.1.25 or newer. Older versions crop the bottom of headless videos and drop requests across navigations. If it's older, ask me to run `npm install -g @playwright/cli@latest`.
-2. `REVIEW_DIR` and `GITHUB_API_KEY` are set. Test the key with `[ -n "$GITHUB_API_KEY" ] && echo set`; never print it.
+2. `REVIEW_DIR` and `GITHUB_API_KEY` are set. review-tool fetches the PR body with `curl` and that key, not `gh`, and exits without it. Test with `[ -n "$GITHUB_API_KEY" ] && echo set`; never print it.
 3. `aws sts get-caller-identity` succeeds. If not, ask me to run `aws sso login`; never run it yourself.
 4. `jq`, `python3` and Docker are available.
 
@@ -49,11 +58,11 @@ For each group, before starting its environment:
 
 1. **Entry PR**: the group's PR whose body has `**Repository to Pull From:**` entries; that's the one review-tool starts. If several do, use the one with the most entries. If none do, mark the group `BLOCKED: no review-tool body` and move on.
 2. **Read** each PR's body, its diff (`gh pr diff`), and the group's section in today's report, if there is one.
-3. **Build the check list** from four sources, labelled by source. Aim for 6–15 checks:
+3. **Build the check list** from four sources, labelled by source. Aim for 3–8 checks, fewer for a small change. Every check must be able to change the verdict; drop any that can't:
    - **PR step**: each Functionality Review step after setup. Steps are often short and generic; make each one concrete from the diff (which button, which expected text or response).
    - **Finding**: each blocking finding, question, or nit the UI or API can trigger, from the code review. The check tries to reproduce it.
-   - **Regression**: 1–3 existing flows closest to the changed code.
-   - **Break it**: 2–4 attempts of your own, from the diff. Pick what the change makes likely: empty, long or odd input, double submit, back button or reload mid-flow, a second tab, another persona or org, the feature flag off.
+   - **Regression**: 0–2 existing flows, only when the diff touches shared code.
+   - **Break it**: 1–3 attempts of your own, from the diff. Pick what the change makes likely: empty, long or odd input, double submit, back button or reload mid-flow, a second tab, another persona or org, the feature flag off.
 4. **Personas**: for each check, who runs it (`references/checks.md`).
 5. Write the plan to `$LIVE/<group>/plan.md`: one line per check with its source, persona, action and expected result.
 
@@ -81,15 +90,15 @@ There is one environment: fixed ports and one emulator. Groups never run in para
 
 Follow `references/checks.md` for personas, recording, UI, API and log checks, and test data.
 
-- With two or more groups, give each group to a subagent, **one after another**. Give it the plan file, `LIVE`, the manifest path and `references/checks.md`, and have it write `$LIVE/<group>/results.md`. Step 5 runs in the main session.
-- Record every check, so each result has a video.
+- Run every group in this session, one after another, and write `$LIVE/<group>/results.md` as soon as a group is done, so a context compaction never loses work. Subagents would start cold and re-read everything.
+- Record every check, so each result has a video. Videos cost no tokens; reading them does.
 
 ## Step 5: Judge the results
 
 For each check, settle one result:
 
 - **PASS**: the Actual column quotes what you saw, and it matches Expected.
-- **FAIL**: what you saw contradicts Expected, and it happened again on a clean retry.
+- **FAIL**: what you saw contradicts Expected. Retry once only if timing could explain it (a slow load, a race); a deterministic response, like a 200 where a 403 was expected, needs no retry.
 - **BLOCKED: <why>**: the environment, persona or data couldn't support the check. Never test around it with a different account.
 - **UNVERIFIED**: it ran, but you couldn't observe the thing that matters (e.g. no request to read, a toast that vanished before the snapshot). Never round it up to PASS.
 

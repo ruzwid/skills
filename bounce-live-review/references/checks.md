@@ -31,7 +31,7 @@ Sessions don't share cookies, storage or IndexedDB, so one Firebase login can't 
 
 ## Recording
 
-One video per check, in that check's session:
+One video per check, in that check's session. A batched check is wrapped the same way: `video-start`, then its `run-code` script, then `video-stop`.
 
 ```bash
 playwright-cli -s=<session> video-start --size 1280x720 "$LIVE/<group>/<n>-<slug>.webm"

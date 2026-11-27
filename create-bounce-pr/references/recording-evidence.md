@@ -12,7 +12,7 @@ playwright-cli --version
 playwright-cli --help | grep -E "video-chapter|find"
 ```
 
-If the command is missing, or `--help` has no `video-chapter`, the install is missing or out of date. Ask the user to run:
+If the command is missing, or the version is older than 0.1.25, ask the user to update. Older versions crop the bottom of headless recordings, and 0.1.23+ records smaller VP9 videos that fit GitHub's size limit more often:
 
 ```bash
 npm install -g @playwright/cli@latest

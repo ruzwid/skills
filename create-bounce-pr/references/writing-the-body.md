@@ -73,22 +73,13 @@ A few bullets per repo. Name the endpoints, components and fields that were adde
 
 No visual by default. Add one only when bullets can't make the point:
 
-- **Mermaid**: the flow crosses 3+ services in an order that isn't obvious. Not for one endpoint with a new parameter.
+- **Visual explainer**: how the change fits together, such as the screens and services it touches, a new flow, or where a check now happens. Draw it as a card-based UI image, not a diagram: follow `references/visual-explainers.md`.
 - **`diff`**: a contract someone else has to act on, like a shared type, request/response shape, stored document shape or config format. Not for one new optional field; a sentence covers that.
 - **Pseudocode**: a non-obvious algorithm or ordering rule.
 - **Table**: 3+ options or fields that change in the same structured way.
+- **Mermaid**: only for graph relationships too tangled to lay out as cards, or formal notation such as a protocol's sequence diagram.
 
 Skip component and file trees. Screenshots in Evidence show the UI better, and the diff shows the files.
-
-```mermaid
-sequenceDiagram
-    participant Dashboard
-    participant DashboardAPI as dashboard-api
-    participant API as api
-    Dashboard->>DashboardAPI: create survey
-    DashboardAPI->>API: publish questions
-    API-->>Dashboard: survey link
-```
 
 ```diff
  retrievalEngineV2Files/{fileId}
