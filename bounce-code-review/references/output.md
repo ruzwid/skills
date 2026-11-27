@@ -38,6 +38,8 @@ Every group gets a table, even a single PR. Order rows by repo, then PR number.
 - Is `closedAt` still read by any external integration?
 
 **Recommendation.** Request changes on #2062; #628 and #677 can merge independently.
+
+**Live check:** worth it. The close flow is new UI, and the tenant finding can be triggered from the browser.
 ```
 
 **Re-reviewed groups** (new commits since the last review) get one line directly under the table, before **Not reviewed**:
@@ -49,6 +51,7 @@ Then a **Resolved since last review** list after the findings, one line each: th
 Findings tags, at the end of the finding: `_(still open since 2026-10-28)_` for an earlier finding not yet fixed, `_(raised by @login)_` for one already raised on the PR.
 
 - Link each location to GitHub with the **full head SHA** and a line range with one line of context either side.
+- End every reviewed group with **Live check:** `worth it` or `not needed`, plus one short reason. Worth it means a user-facing flow changed, or a finding can be triggered from the UI or API. Not needed means config, copy, types, backend-only refactors, or anything the diff and tests already settle. bounce-live-review adds its own `#### Live check` section later.
 - Omit empty Blocking / Nits / Questions headings. Mark drafts `_draft_`.
 - A single PR with no findings: the table plus **What it does** and "No findings."
 - The **Not reviewed (not requested)** line goes directly under the table and only ever names a PR outside the table, so nobody reads it as "a requested PR was skipped".

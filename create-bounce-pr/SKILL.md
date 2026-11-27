@@ -13,6 +13,7 @@ Take a Bounce ticket from *"work is done on the branch"* to *"PRs are open and r
 
 - `references/review-tool-format.md` — the body template, which repos to list, entry format, service reference (commands + URLs), install and branch logic. Read before Step 2.
 - `references/writing-the-body.md` — how to write Context, What changed, Evidence, Merge Danger, and Functionality Review, what to leave out, and which visual formats to choose. Read before Step 4.
+- `references/visual-explainers.md` — drawing a card-based explainer image for What changed, when one is worth it. Read only when Step 4 needs a visual.
 - `references/recording-evidence.md` — recording a walkthrough video and screenshots with Playwright. Read only when Step 4b applies.
 
 ## Expected setup (before this skill runs)
